@@ -199,6 +199,14 @@ package ariane_pkg;
     ACCEL       // 10
   } fu_t;
 
+  typedef enum logic [2:0] {
+    ready,
+    running,
+    stalled_icache,
+    stalled_dcache,
+    halted
+  } thread_status_t;
+
   // Index of writeback ports
   localparam FLU_WB = 0;
   localparam STORE_WB = 1;

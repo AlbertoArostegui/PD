@@ -343,6 +343,10 @@ module frontend
   logic [CVA6Cfg.VLEN-1:0] thread_pc;
   logic [$clog(CVA6Cfg.NUM_THREADS)-1:0] current_thread_id_d, current_thread_id_q;
   logic [CVA6Cfg.NUM_THREADS-1:0] thread_ready;
+  thread_status_t [NUM_THREADS-1:0] all_threads_status;
+
+  logic update_pc;
+  logic [CVA6Cfg.VLEN-1:0] next_pc_val;
 
   thread_context #(
     .CVA6Cfg(CVA6Cfg),
@@ -353,20 +357,38 @@ module frontend
     .pc_read_thread_id_i(current_thread_id_q),
     .pc_read_value_o(thread_pc),
     .pc_write_thread_id_i(current_thread_id_q),
+    //TODO: This two signals to be changed
     .pc_write_i(update_pc),
-    .pc_write_value_i(next_pc),
+    .pc_write_value_i(next_pc_val),
+
+    .thread_status_update_i(),
+    .thread_status_update_id_i(),
+    .thread_status_value_i(),
+    .all_threads_status,
     .boot_addr_i(boot_addr_i)
   );
 
   always_comb begin : thread_schedule
     current_thread_id_d = current_thread_id_q;
+    logic found_ready;
+    logic [$clog2(NUM_THREADS):0] candidate_thread_id;
+
+    for (int i = 1; i < NUM_THREADS; i++) begin
+      candidate_thread_id = (current_thread_id_q + i) % NUM_THREADS;
+
+      if (all_threads_status[candidate_thread_id] == ready) begin
+        current_thread_id_d = candidate_thread_id;
+        found_ready = 1'b1;
+        break;
+      end
+    end
 
     if (instr_queue_ready && !halt_i) begin
-      int next_thread = (current_thread_id_q + i) % CVA6Cfg.NUM_THREADS;
+      current_thread_id_d = next_thread;
     end
   end
 
-  assign fetch_entry_o.thread_id = current_thread_q;
+  assign fetch_entry_o.thread_id = current_thread_id_q;
 
   // -------------------
   // Next PC
@@ -380,6 +402,24 @@ module frontend
   // 5. Pipeline Flush because of CSR side effects
   // Mis-predict handling is a little bit different
   // select PC a.k.a PC Gen
+  //
+  // TODO: Next PC control logic (i. e. the signals that points out if there has been
+  // a branch, exception, ret and so on) must be associated with a thread id
+  always_comb begin : npc_select2
+    udpate_pc = 1'b0;
+    next_pc_val = 0;
+    logic [CVA6Cfg.VLEN-1:0] current_fetch_address = thread_pc;
+    if (if_ready) begin
+      update_pc = 1'b1;
+      next_pc_val = {
+        current_fetch_address[CVA6Cfg.VLEN-1:CVA6Cfg.FETCH_ALIGN_BITS] + 1, {CVA6Cfg.FETCH_ALIGN_BITS{1'b0}}
+      };
+    end
+    if (bp_valid) begin
+      update_pc = 1'b1;
+      next_pc_val = predict_address;
+    end
+  end
   always_comb begin : npc_select
     automatic logic [CVA6Cfg.VLEN-1:0] fetch_address;
     // check whether we come out of reset
