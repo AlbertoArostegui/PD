@@ -443,6 +443,7 @@ module cva6
   logic zcmt_id_ex;
   logic is_compressed_instr_id_ex;
   logic [CVA6Cfg.NrIssuePorts-1:0][31:0] tinst_ex;
+
   // fixed latency units
   logic flu_ready_ex_id;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] flu_trans_id_ex_id;
@@ -450,6 +451,7 @@ module cva6
   logic [CVA6Cfg.XLEN-1:0] flu_result_ex_id;
   exception_t flu_exception_ex_id;
   logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] flu_thread_id_ex_id;
+
   // ALU
   logic [CVA6Cfg.NrIssuePorts-1:0] alu_valid_id_ex;
   // Branches and Jumps
@@ -465,11 +467,14 @@ module cva6
   logic [CVA6Cfg.XLEN-1:0] load_result_ex_id;
   logic load_valid_ex_id;
   exception_t load_exception_ex_id;
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] load_thread_id_ex_id;
 
   logic [CVA6Cfg.XLEN-1:0] store_result_ex_id;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] store_trans_id_ex_id;
   logic store_valid_ex_id;
   exception_t store_exception_ex_id;
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] store_thread_id_ex_id;
+
   // MULT
   logic [CVA6Cfg.NrIssuePorts-1:0] mult_valid_id_ex;
   // FPU
@@ -782,11 +787,13 @@ module cva6
   assign wbdata_ex_id[STORE_WB]   = store_result_ex_id;
   assign ex_ex_ex_id[STORE_WB]    = store_exception_ex_id;
   assign wt_valid_ex_id[STORE_WB] = store_valid_ex_id;
+  assign thread_id_ex_id[STORE_WB]= store_thread_id_ex_id;
 
   assign trans_id_ex_id[LOAD_WB] = load_trans_id_ex_id;
   assign wbdata_ex_id[LOAD_WB]   = load_result_ex_id;
   assign ex_ex_ex_id[LOAD_WB]    = load_exception_ex_id;
   assign wt_valid_ex_id[LOAD_WB] = load_valid_ex_id;
+  assign thread_id_ex_id[LOAD_WB]= load_thread_id_ex_id;
 
   assign trans_id_ex_id[FPU_WB] = fpu_trans_id_ex_id;
   assign wbdata_ex_id[FPU_WB]   = fpu_result_ex_id;
@@ -996,13 +1003,13 @@ module cva6
       .load_trans_id_o (load_trans_id_ex_id),
       .load_valid_o    (load_valid_ex_id),
       .load_exception_o(load_exception_ex_id),
-      .load_wb_o(),
+      .load_thread_id_o(load_thread_id_ex_id),
 
       .store_result_o   (store_result_ex_id),
       .store_trans_id_o (store_trans_id_ex_id),
       .store_valid_o    (store_valid_ex_id),
       .store_exception_o(store_exception_ex_id),
-      .store_wb_o(),
+      .store_thread_id_o(store_thread_id_ex_id),
 
       .lsu_commit_i            (lsu_commit_commit_ex),           // from commit
       .lsu_commit_ready_o      (lsu_commit_ready_ex_commit),     // to commit
