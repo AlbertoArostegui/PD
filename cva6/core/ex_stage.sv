@@ -56,6 +56,7 @@ module ex_stage
     input logic is_compressed_instr_i,
     // Report instruction encoding - ISSUE_STAGE
     input logic [CVA6Cfg.NrIssuePorts-1:0][31:0] tinst_i,
+
     // Fixed Latency Unit result - ISSUE_STAGE
     output logic [CVA6Cfg.XLEN-1:0] flu_result_o,
     // ID of the scoreboard entry at which a=to write back - ISSUE_STAGE
@@ -66,7 +67,8 @@ module ex_stage
     output logic flu_ready_o,
     // FLU result is valid - ISSUE_STAGE
     output logic flu_valid_o,
-    output writeback_t flu_wb_o,
+    // FLU thread_id - ISSUE_STAGE
+    output logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] flu_thread_id_o,
 
     // ALU instruction is valid - ISSUE_STAGE
     input logic [CVA6Cfg.NrIssuePorts-1:0] alu_valid_i,
@@ -282,6 +284,7 @@ module ex_stage
   logic [CVA6Cfg.VLEN-1:0] branch_result;
   logic csr_ready, mult_ready;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id;
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] mult_thread_id;
   logic mult_valid;
 
   logic [CVA6Cfg.NrIssuePorts-1:0] one_cycle_select;
@@ -380,28 +383,20 @@ module ex_stage
     end
   end
 
-  always_comb begin : writeback_flu
-    flu_wb_o.valid = 1'b0;
-    flu_wb_o.thread_id = 'x;
-    flu_wb_o.data = '0;
-    flu_wb_o.ex = '0;
-    flu_wb_o.trans_id = 'x;
+  // thread_id for FLUs
+  always_comb begin : thread_id_flu
+    flu_thread_id_o = 'x;
 
     if (flu_valid_o) begin
-      flu_wb_o.valid = 1'b1;
-      flu_wb_o.thread_id = 'x;
-      flu_wb_o.data = flu_result_o;
-      flu_wb_o.ex = flu_exception_o;
-      flu_wb_o.trans_id = flu_trans_id_o;
 
       if (|alu_valid_i)
-        flu_wb_o.thread_id = one_cycle_data.thread_id;
+        flu_thread_id_o = one_cycle_data.thread_id;
       else if (|branch_valid_i)
-        flu_wb_o.thread_id = one_cycle_data.thread_id;
+        flu_thread_id_o = one_cycle_data.thread_id;
       else if (|csr_valid_i)
-        flu_wb_o.thread_id = one_cycle_data.thread_id;
+        flu_thread_id_o = one_cycle_data.thread_id;
       else if (mult_valid)
-        flu_wb_o.thread_id = mult_data.thread_id;
+        flu_thread_id_o = mult_thread_id;
     end
   end
 
@@ -434,7 +429,8 @@ module ex_stage
       .result_o       (mult_result),
       .mult_valid_o   (mult_valid),
       .mult_ready_o   (mult_ready),
-      .mult_trans_id_o(mult_trans_id)
+      .mult_trans_id_o(mult_trans_id),
+      .mult_thread_id_o(mult_thread_id)
   );
 
   // ----------------

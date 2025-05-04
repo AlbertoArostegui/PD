@@ -23,7 +23,9 @@ module mult
     // Mutl is ready - ISSUE_STAGE
     output logic                                 mult_ready_o,
     // Mult transaction ID - ISSUE_STAGE
-    output logic     [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id_o
+    output logic     [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id_o,
+
+    output logic     [$clog2(CVA6Cfg.THREAD_NUM)-1:0] mult_thread_id_o
 );
   logic mul_valid;
   logic div_valid;
@@ -32,6 +34,8 @@ module mult
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] div_trans_id;
   logic [CVA6Cfg.XLEN-1:0] mul_result;
   logic [CVA6Cfg.XLEN-1:0] div_result;
+  logic [$clog2(CVA6Cfg.THREAD_NUM)-1:0] mul_thread_id;
+  logic [$clog2(CVA6Cfg.THREAD_NUM)-1:0] div_thread_id;
 
   logic div_valid_op;
   logic mul_valid_op;
@@ -49,6 +53,7 @@ module mult
   assign div_ready_i = (mul_valid) ? 1'b0 : 1'b1;
   assign mult_trans_id_o = (mul_valid) ? mul_trans_id : div_trans_id;
   assign result_o = (mul_valid) ? mul_result : div_result;
+  assign mult_thread_id_o = (mul_valid) ? mul_thread_id : div_thread_id;
   assign mult_valid_o = div_valid | mul_valid;
   // mult_ready_o = division as the multiplication will unconditionally be ready to accept new requests
 
@@ -61,13 +66,15 @@ module mult
       .clk_i,
       .rst_ni,
       .trans_id_i     (fu_data_i.trans_id),
+      .thread_id_i    (fu_data_i.thread_id),
       .operation_i    (fu_data_i.operation),
       .operand_a_i    (fu_data_i.operand_a),
       .operand_b_i    (fu_data_i.operand_b),
       .result_o       (mul_result),
       .mult_valid_i   (mul_valid_op),
       .mult_valid_o   (mul_valid),
-      .mult_trans_id_o(mul_trans_id)
+      .mult_trans_id_o(mul_trans_id),
+      .mult_thread_id_o(mul_thread_id)
   );
 
   // ---------------------
@@ -129,6 +136,7 @@ module mult
       .clk_i    (clk_i),
       .rst_ni   (rst_ni),
       .id_i     (fu_data_i.trans_id),
+      .thread_id_i (fu_data_i.thread_id),
       .op_a_i   (operand_a),
       .op_b_i   (operand_b),
       .opcode_i ({rem, div_signed}),   // 00: udiv, 10: urem, 01: div, 11: rem
@@ -138,7 +146,8 @@ module mult
       .out_vld_o(div_valid),
       .out_rdy_i(div_ready_i),
       .id_o     (div_trans_id),
-      .res_o    (result)
+      .res_o    (result),
+      .thread_id_o (div_thread_id)
   );
 
   // Result multiplexer

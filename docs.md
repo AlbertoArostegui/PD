@@ -54,3 +54,7 @@ In the issue stage, precisely in the scoreboard, we have updated the struct to c
 In the execute stage, we will be making some changes to the writeback of the instructions:
 - In the FLU (fixed latency units) its simple, we just return the same thread_id that entered in the scoreboard entry struct (the input).
 - In the LSU, we have to first store the thread_id while the operations complete, regarding stalls, delays and so on. Once the instruction is marked as valid output, we take that same thread_id for the writeback.
+
+##### EX stage
+###### Multiplier
+Pipelined the thread_id that comes in `fu_data_t` in both the multiplier (simple sequential 1 cycle multiplication) and in the serdiv (pipelining until it finished). From there, propagated into the output of the `mult.sv` module in order to assign it to the writeback port `thread_id_o` of the EX stage when `mult_valid` is asserted.

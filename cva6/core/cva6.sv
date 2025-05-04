@@ -449,6 +449,7 @@ module cva6
   logic flu_valid_ex_id;
   logic [CVA6Cfg.XLEN-1:0] flu_result_ex_id;
   exception_t flu_exception_ex_id;
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] flu_thread_id_ex_id;
   // ALU
   logic [CVA6Cfg.NrIssuePorts-1:0] alu_valid_id_ex;
   // Branches and Jumps
@@ -769,11 +770,13 @@ module cva6
   logic [CVA6Cfg.NrWbPorts-1:0][CVA6Cfg.XLEN-1:0] wbdata_ex_id;
   exception_t [CVA6Cfg.NrWbPorts-1:0] ex_ex_ex_id;  // exception from execute, ex_stage to id_stage
   logic [CVA6Cfg.NrWbPorts-1:0] wt_valid_ex_id;
+  logic [CVA6Cfg.NrWbPorts-1:0][$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_ex_id; // propagate the thread id for accurate forwarding and WB
 
   assign trans_id_ex_id[FLU_WB] = flu_trans_id_ex_id;
   assign wbdata_ex_id[FLU_WB]   = flu_result_ex_id;
   assign ex_ex_ex_id[FLU_WB]    = flu_exception_ex_id;
   assign wt_valid_ex_id[FLU_WB] = flu_valid_ex_id;
+  assign thread_id_ex_id[FLU_WB]= flu_thread_id_ex_id;
 
   assign trans_id_ex_id[STORE_WB] = store_trans_id_ex_id;
   assign wbdata_ex_id[STORE_WB]   = store_result_ex_id;
@@ -970,7 +973,7 @@ module cva6
       .flu_valid_o(flu_valid_ex_id),
       .flu_exception_o(flu_exception_ex_id),
       .flu_ready_o(flu_ready_ex_id),
-      .flu_wb_o(),
+      .flu_thread_id_o(flu_thread_id_ex_id),
       // ALU
       .alu_valid_i(alu_valid_id_ex),
       // Branches and Jumps

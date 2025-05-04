@@ -109,6 +109,7 @@ module commit_stage
   end
 
   assign pc_o = commit_instr_i[0].pc;
+
   // Dirty the FP state if we are committing anything related to the FPU
   always_comb begin : dirty_fp_state
     dirty_fp_state_o = 1'b0;
