@@ -28,7 +28,7 @@ module serdiv
     input logic rst_ni,
     // Serdiv translation ID - Mult
     input logic [CVA6Cfg.TRANS_ID_BITS-1:0] id_i,
-    input logic [$clog2(CVA6Cfg.THREAD_NUM)-1:0] thread_id_i,
+    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_i,
     // A operand - Mult
     input logic [WIDTH-1:0] op_a_i,
     // B operand - Mult
@@ -50,7 +50,7 @@ module serdiv
     // Serdiv result - Mult
     output logic [WIDTH-1:0] res_o,
 
-    output logic [$clog2(CVA6Cfg.THREAD_NUM)-1:0] thread_id_o
+    output logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_o
 );
 
   /////////////////////////////////////
@@ -72,7 +72,7 @@ module serdiv
   logic op_b_neg_one, op_b_neg_one_q, op_b_neg_one_d;
 
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] id_q, id_d;
-  logic [$clog2(CVA6Cfg.THREAD_NUM)-1:0] thread_id_q, thread_id_d;
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_q, thread_id_d;
 
   logic rem_sel_d, rem_sel_q;
   logic comp_inv_d, comp_inv_q;

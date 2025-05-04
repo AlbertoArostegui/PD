@@ -450,7 +450,11 @@ module cva6
   logic flu_valid_ex_id;
   logic [CVA6Cfg.XLEN-1:0] flu_result_ex_id;
   exception_t flu_exception_ex_id;
+<<<<<<< HEAD
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flu_thread_id_ex_id;
+=======
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] flu_thread_id_ex_id;
+>>>>>>> 0e984305 (Propagation of the wb thread_id for store and load)
 
   // ALU
   logic [CVA6Cfg.NrIssuePorts-1:0] alu_valid_id_ex;
@@ -467,13 +471,21 @@ module cva6
   logic [CVA6Cfg.XLEN-1:0] load_result_ex_id;
   logic load_valid_ex_id;
   exception_t load_exception_ex_id;
+<<<<<<< HEAD
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] load_thread_id_ex_id;
+=======
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] load_thread_id_ex_id;
+>>>>>>> 0e984305 (Propagation of the wb thread_id for store and load)
 
   logic [CVA6Cfg.XLEN-1:0] store_result_ex_id;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] store_trans_id_ex_id;
   logic store_valid_ex_id;
   exception_t store_exception_ex_id;
+<<<<<<< HEAD
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] store_thread_id_ex_id;
+=======
+  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] store_thread_id_ex_id;
+>>>>>>> 0e984305 (Propagation of the wb thread_id for store and load)
 
   // MULT
   logic [CVA6Cfg.NrIssuePorts-1:0] mult_valid_id_ex;

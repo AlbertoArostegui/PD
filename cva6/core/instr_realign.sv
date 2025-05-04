@@ -101,6 +101,7 @@ module instr_realign
       // we started to fetch on a unaligned boundary with a whole instruction -> wait until we've
       // received the next instruction
       if (valid_i && address_i[1]) begin
+          
         // the instruction is not compressed so we can't do anything in this cycle
         if (!instr_is_compressed[0]) begin
           valid_o = '0;

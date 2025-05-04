@@ -93,7 +93,7 @@ module multiplier
   // control signals
   assign mult_valid_o = mult_valid_q;
   assign mult_trans_id_o = trans_id_q;
-  assign thread_id_o = thread_id_q;
+  assign mult_thread_id_o = thread_id_q;
 
   assign mult_valid      = mult_valid_i && (operation_i inside {MUL, MULH, MULHU, MULHSU, MULW, CLMUL, CLMULH, CLMULR});
 
