@@ -437,10 +437,12 @@ module issue_read_operands
         .rst_ni(rst_ni),
         .rs_i(issue_instr_i[i].rs1),
         .rs_fpr_i(rs1_fpr[i]),
+        .thread_id_i(issue_isntr_i[i].thread_id),
         .rd_i(rd_list),
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
         .issue_pointer_i(fwd_i.issue_pointer),
+        .thread_ids_i(fwd_i.sbe.thread_id),
         .idx_o(idx_hzd_rs1[i]),
         .valid_o(rs1_raw_check[i])
     );
@@ -452,11 +454,13 @@ module issue_read_operands
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .rs_i(issue_instr_i[i].rs2),
+        .thread_id_i(issue_isntr_i[i].thread_id),
         .rs_fpr_i(rs2_fpr[i]),
         .rd_i(rd_list),
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
         .issue_pointer_i(fwd_i.issue_pointer),
+        .thread_ids_i(fwd_i.sbe.thread_id),
         .idx_o(idx_hzd_rs2[i]),
         .valid_o(rs2_raw_check[i])
     );
@@ -468,11 +472,13 @@ module issue_read_operands
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .rs_i(issue_instr_i[i].result[ariane_pkg::REG_ADDR_SIZE-1:0]),
+        .thread_id_i(issue_isntr_i[i].thread_id),
         .rs_fpr_i(rs3_fpr[i]),
         .rd_i(rd_list),
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
         .issue_pointer_i(fwd_i.issue_pointer),
+        .thread_ids_i(fwd_i.sbe.thread_id),
         .idx_o(idx_hzd_rs3[i]),
         .valid_o(rs3_raw_check[i])
     );

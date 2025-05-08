@@ -272,6 +272,7 @@ module scoreboard #(
     assign num_commit = commit_ack_i[0];
   end
 
+  // Sum the number of committing instructions in this cycle
   assign commit_pointer_n[0] = (flush_i) ? '0 : commit_pointer_q[0] + num_commit;
 
   always_comb begin : assign_issue_pointer_n

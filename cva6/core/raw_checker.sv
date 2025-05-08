@@ -16,11 +16,13 @@ module raw_checker
     input logic clk_i,
     // Asynchronous reset active low - SUBSYSTEM
     input logic rst_ni,
-    // Register source of the instruction to check RAW dependancies - SCOREBOARD 
+    // Register source of the instruction to check RAW dependancies - SCOREBOARD
     input logic [REG_ADDR_SIZE-1:0] rs_i,
     // Type of register source (FPR or GPR) - SCOREBOARD
     input logic rs_fpr_i,
-    // Registers of destination of the instructions already issued in the scoreboard - SCOREBOARD 
+    // Thread_id of the current instruction
+    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_i,
+    // Registers of destination of the instructions already issued in the scoreboard - SCOREBOARD
     input logic [CVA6Cfg.NR_SB_ENTRIES-1:0][REG_ADDR_SIZE-1:0] rd_i,
     // Type of registers of destination (FPR or GPR) - SCOREBOARD
     input logic [CVA6Cfg.NR_SB_ENTRIES-1:0] rd_fpr_i,
@@ -28,6 +30,8 @@ module raw_checker
     input logic [CVA6Cfg.NR_SB_ENTRIES-1:0] still_issued_i,
     // Issue pointer - SCOREBOARD
     input logic [CVA6Cfg.TRANS_ID_BITS-1:0] issue_pointer_i,
+    // Thread_id - SCOREBOARD
+    input logic [CVA6Cfg.NR_SB_ENTRIES-1:0][$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_ids_i,
 
     // Index in the scoreboard of the most recent RAW dependancy - SCOREBOARD
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] idx_o,
@@ -49,7 +53,7 @@ module raw_checker
   logic                             rs_is_gpr0;
 
   for (genvar i = 0; i < CVA6Cfg.NR_SB_ENTRIES; i++) begin
-    assign same_rd_as_rs[i] = (rs_fpr_i == rd_fpr_i[i]) && (rs_i == rd_i[i]) && still_issued_i[i];
+    assign same_rd_as_rs[i] = (rs_fpr_i == rd_fpr_i[i]) && (rs_i == rd_i[i]) && (thread_id_i == thread_ids_i[i]) && still_issued_i[i];
     assign same_rd_as_rs_before[i] = (i < issue_pointer_i) && same_rd_as_rs[i];
     assign same_rd_as_rs_after[i] = (i >= issue_pointer_i) && same_rd_as_rs[i];
   end
