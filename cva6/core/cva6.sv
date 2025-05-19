@@ -31,7 +31,7 @@ module cva6
       rvfi_probes_instr_t instr;
     },
 
-    parameter int unsigned THREAD_ID_WIDTH = $clog2(CVA6Cfg.NUM_THREADS),
+    parameter int unsigned THREAD_ID_WIDTH = CVA6Cfg.NUM_THREADS_LOG,
 
     // branchpredict scoreboard entry
     // this is the struct which we will inject into the pipeline to guide the various
@@ -450,7 +450,7 @@ module cva6
   logic flu_valid_ex_id;
   logic [CVA6Cfg.XLEN-1:0] flu_result_ex_id;
   exception_t flu_exception_ex_id;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] flu_thread_id_ex_id;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flu_thread_id_ex_id;
 
   // ALU
   logic [CVA6Cfg.NrIssuePorts-1:0] alu_valid_id_ex;
@@ -467,13 +467,13 @@ module cva6
   logic [CVA6Cfg.XLEN-1:0] load_result_ex_id;
   logic load_valid_ex_id;
   exception_t load_exception_ex_id;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] load_thread_id_ex_id;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] load_thread_id_ex_id;
 
   logic [CVA6Cfg.XLEN-1:0] store_result_ex_id;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] store_trans_id_ex_id;
   logic store_valid_ex_id;
   exception_t store_exception_ex_id;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] store_thread_id_ex_id;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] store_thread_id_ex_id;
 
   // MULT
   logic [CVA6Cfg.NrIssuePorts-1:0] mult_valid_id_ex;
@@ -775,7 +775,7 @@ module cva6
   logic [CVA6Cfg.NrWbPorts-1:0][CVA6Cfg.XLEN-1:0] wbdata_ex_id;
   exception_t [CVA6Cfg.NrWbPorts-1:0] ex_ex_ex_id;  // exception from execute, ex_stage to id_stage
   logic [CVA6Cfg.NrWbPorts-1:0] wt_valid_ex_id;
-  logic [CVA6Cfg.NrWbPorts-1:0][$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_ex_id; // propagate the thread id for accurate forwarding and WB
+  logic [CVA6Cfg.NrWbPorts-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_ex_id; // propagate the thread id for accurate forwarding and WB
 
   assign trans_id_ex_id[FLU_WB] = flu_trans_id_ex_id;
   assign wbdata_ex_id[FLU_WB]   = flu_result_ex_id;
@@ -1147,90 +1147,103 @@ module cva6
   // ---------
   // CSR
   // ---------
-  csr_regfile #(
-      .CVA6Cfg           (CVA6Cfg),
-      .exception_t       (exception_t),
-      .jvt_t             (jvt_t),
-      .irq_ctrl_t        (irq_ctrl_t),
-      .scoreboard_entry_t(scoreboard_entry_t),
-      .rvfi_probes_csr_t (rvfi_probes_csr_t),
-      .MHPMCounterNum    (MHPMCounterNum)
-  ) csr_regfile_i (
-      .clk_i,
-      .rst_ni,
-      .time_irq_i,
-      .flush_o                 (flush_csr_ctrl),
-      .halt_csr_o              (halt_csr_ctrl),
-      .commit_instr_i          (commit_instr_id_commit[0]),
-      .commit_ack_i            (commit_ack),
-      .boot_addr_i             (boot_addr_i[CVA6Cfg.VLEN-1:0]),
-      .hart_id_i               (hart_id_i[CVA6Cfg.XLEN-1:0]),
-      .ex_i                    (ex_commit),
-      .csr_op_i                (csr_op_commit_csr),
-      .csr_addr_i              (csr_addr_ex_csr),
-      .csr_wdata_i             (csr_wdata_commit_csr),
-      .csr_rdata_o             (csr_rdata_csr_commit),
-      .dirty_fp_state_i        (dirty_fp_state),
-      .csr_write_fflags_i      (csr_write_fflags_commit_cs),
-      .dirty_v_state_i         (dirty_v_state),
-      .pc_i                    (pc_commit),
-      .csr_exception_o         (csr_exception_csr_commit),
-      .epc_o                   (epc_commit_pcgen),
-      .eret_o                  (eret),
-      .trap_vector_base_o      (trap_vector_base_commit_pcgen),
-      .priv_lvl_o              (priv_lvl),
-      .v_o                     (v),
-      .acc_fflags_ex_i         (acc_resp_fflags),
-      .acc_fflags_ex_valid_i   (acc_resp_fflags_valid),
-      .fs_o                    (fs),
-      .vfs_o                   (vfs),
-      .fflags_o                (fflags_csr_commit),
-      .frm_o                   (frm_csr_id_issue_ex),
-      .fprec_o                 (fprec_csr_ex),
-      .vs_o                    (vs),
-      .irq_ctrl_o              (irq_ctrl_csr_id),
-      .en_translation_o        (enable_translation_csr_ex),
-      .en_g_translation_o      (enable_g_translation_csr_ex),
-      .en_ld_st_translation_o  (en_ld_st_translation_csr_ex),
-      .en_ld_st_g_translation_o(en_ld_st_g_translation_csr_ex),
-      .ld_st_priv_lvl_o        (ld_st_priv_lvl_csr_ex),
-      .ld_st_v_o               (ld_st_v_csr_ex),
-      .csr_hs_ld_st_inst_i     (csr_hs_ld_st_inst_ex),
-      .sum_o                   (sum_csr_ex),
-      .vs_sum_o                (vs_sum_csr_ex),
-      .mxr_o                   (mxr_csr_ex),
-      .vmxr_o                  (vmxr_csr_ex),
-      .satp_ppn_o              (satp_ppn_csr_ex),
-      .asid_o                  (asid_csr_ex),
-      .vsatp_ppn_o             (vsatp_ppn_csr_ex),
-      .vs_asid_o               (vs_asid_csr_ex),
-      .hgatp_ppn_o             (hgatp_ppn_csr_ex),
-      .vmid_o                  (vmid_csr_ex),
-      .irq_i,
-      .ipi_i,
-      .debug_req_i,
-      .set_debug_pc_o          (set_debug_pc),
-      .tvm_o                   (tvm_csr_id),
-      .tw_o                    (tw_csr_id),
-      .vtw_o                   (vtw_csr_id),
-      .tsr_o                   (tsr_csr_id),
-      .hu_o                    (hu),
-      .debug_mode_o            (debug_mode),
-      .single_step_o           (single_step_csr_commit),
-      .icache_en_o             (icache_en_csr),
-      .dcache_en_o             (dcache_en_csr_nbdcache),
-      .acc_cons_en_o           (acc_cons_en_csr),
-      .perf_addr_o             (addr_csr_perf),
-      .perf_data_o             (data_csr_perf),
-      .perf_data_i             (data_perf_csr),
-      .perf_we_o               (we_csr_perf),
-      .pmpcfg_o                (pmpcfg),
-      .pmpaddr_o               (pmpaddr),
-      .mcountinhibit_o         (mcountinhibit_csr_perf),
-      .jvt_o                   (jvt),
-      //RVFI
-      .rvfi_csr_o              (rvfi_csr)
-  );
+generate
+  for(genvar i = 0; i < NUM_THREADS; i++) begin
+    ///////////////////////////////////////////////////////////////////////
+    //                                                                   //
+    //    In general:                                                    //
+    //    Control Logic: has to be forward 1 bit per thread              //
+    //    Results: have to be moved to the correspondant instr struct    //
+    //    Inputs: have to be muxed to the correct th_csr                 //
+    //    Both Inputs and results will be muxed outside the modules to   //
+    //    not change the modules inside                                  //
+    //                                                                   //
+    ///////////////////////////////////////////////////////////////////////
+    csr_regfile #(
+        .CVA6Cfg           (CVA6Cfg),
+        .exception_t       (exception_t),
+        .jvt_t             (jvt_t),
+        .irq_ctrl_t        (irq_ctrl_t),
+        .scoreboard_entry_t(scoreboard_entry_t),
+        .rvfi_probes_csr_t (rvfi_probes_csr_t),
+        .MHPMCounterNum    (MHPMCounterNum)
+    ) csr_regfile_i (
+        .clk_i,
+        .rst_ni,
+        .time_irq_i, // AZK th dependant
+        .flush_o                 (flush_csr_ctrl), // AZK: need to also specify which th to flush and change flushed intructions to nops
+        .halt_csr_o              (halt_csr_ctrl), // AZK: we only care of the Oldest halt
+        .commit_instr_i          (commit_instr_id_commit[0]), // AZK: always feed the older id for the thread, toggle only ack
+        .commit_ack_i            (commit_ack), // AZK: feed only th instructions back to back
+        .boot_addr_i             (boot_addr_i[CVA6Cfg.VLEN-1:0]), // AZK: Th dependant
+        .hart_id_i               (hart_id_i[CVA6Cfg.XLEN-1:0]),   // AZK: Th dependant
+        .ex_i                    (ex_commit),                     // AZK: only feed when this is the th
+        .csr_op_i                (csr_op_commit_csr),             // AZK: mux th input and other NONE
+        .csr_addr_i              (csr_addr_ex_csr),               // AZK: independent
+        .csr_wdata_i             (csr_wdata_commit_csr),          // AZK: independent
+        .csr_rdata_o             (csr_rdata_csr_commit),          // AZK: mux th result to instr
+        .dirty_fp_state_i        (dirty_fp_state),                // No float
+        .csr_write_fflags_i      (csr_write_fflags_commit_cs),    // No float
+        .dirty_v_state_i         (dirty_v_state),                 // No vector
+        .pc_i                    (pc_commit),                     // AZK: Th dependant
+        .csr_exception_o         (csr_exception_csr_commit),      // AZK: independent
+        .epc_o                   (epc_commit_pcgen),              // AZK: Th dependant
+        .eret_o                  (eret),                          // AZK: Th dependant
+        .trap_vector_base_o      (trap_vector_base_commit_pcgen), // AZK: Th dependant
+        .priv_lvl_o              (priv_lvl),                      // AZK: Th dependant
+        .v_o                     (v),                             // No vector
+        .acc_fflags_ex_i         (acc_resp_fflags),               // No float
+        .acc_fflags_ex_valid_i   (acc_resp_fflags_valid),         // No float
+        .fs_o                    (fs),                            // No float
+        .vfs_o                   (vfs),                           // No float
+        .fflags_o                (fflags_csr_commit),             // No float
+        .frm_o                   (frm_csr_id_issue_ex),           // No float
+        .fprec_o                 (fprec_csr_ex),                  // No float
+        .vs_o                    (vs),                            // No vector
+        .irq_ctrl_o              (irq_ctrl_csr_id),               // AZK: Th dependant
+        .en_translation_o        (enable_translation_csr_ex),     // AZK: Th dependant (thd)
+        .en_g_translation_o      (enable_g_translation_csr_ex),   // AZK: thd
+        .en_ld_st_translation_o  (en_ld_st_translation_csr_ex),   // AZK: thd
+        .en_ld_st_g_translation_o(en_ld_st_g_translation_csr_ex), // AZK: thd
+        .ld_st_priv_lvl_o        (ld_st_priv_lvl_csr_ex),         // AZK: thd
+        .ld_st_v_o               (ld_st_v_csr_ex),                // AZK: thd
+        .csr_hs_ld_st_inst_i     (csr_hs_ld_st_inst_ex),          // AZK: thd
+        .sum_o                   (sum_csr_ex),                    // AZK: thd
+        .vs_sum_o                (vs_sum_csr_ex),                 // no vector
+        .mxr_o                   (mxr_csr_ex),                    // AZK: thx
+        .vmxr_o                  (vmxr_csr_ex),                   // no vector
+        .satp_ppn_o              (satp_ppn_csr_ex),               // thd
+        .asid_o                  (asid_csr_ex),                   // thd
+        .vsatp_ppn_o             (vsatp_ppn_csr_ex),              // no vector
+        .vs_asid_o               (vs_asid_csr_ex),                // no vector
+        .hgatp_ppn_o             (hgatp_ppn_csr_ex),              // no hypervs
+        .vmid_o                  (vmid_csr_ex),                   // no hypervs
+        .irq_i,                                                   // thd
+        .ipi_i,                                                   // thd
+        .debug_req_i,                                             // thd
+        .set_debug_pc_o          (set_debug_pc),                  // thd
+        .tvm_o                   (tvm_csr_id),                    // no hypervs
+        .tw_o                    (tw_csr_id),                     // no hypervs
+        .vtw_o                   (vtw_csr_id),                    // no hypervs
+        .tsr_o                   (tsr_csr_id),                    // no hypervs
+        .hu_o                    (hu),                            // no hypervs
+        .debug_mode_o            (debug_mode),                    // thd
+        .single_step_o           (single_step_csr_commit),        // thd Debug will be a pain
+        .icache_en_o             (icache_en_csr),                 // thd
+        .dcache_en_o             (dcache_en_csr_nbdcache),        // thd
+        .acc_cons_en_o           (acc_cons_en_csr),               // disabled?
+        .perf_addr_o             (addr_csr_perf),                 // thd all perf signals are hooked to the thread perf module, so no overlaping data here, also we can disable them
+        .perf_data_o             (data_csr_perf),                 // thd
+        .perf_data_i             (data_perf_csr),                 // thd
+        .perf_we_o               (we_csr_perf),                   // thd
+        .pmpcfg_o                (pmpcfg),                        // thd
+        .pmpaddr_o               (pmpaddr),                       // thd
+        .mcountinhibit_o         (mcountinhibit_csr_perf),        // thd
+        .jvt_o                   (jvt),                           // disabled?
+        //RVFI
+        .rvfi_csr_o              (rvfi_csr)                       // thx, but i think we can ignore, these are probes
+    );
+  end
 
   // ------------------------
   // Performance Counters

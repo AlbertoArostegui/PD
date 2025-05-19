@@ -66,10 +66,10 @@ module frontend
     input logic [CVA6Cfg.NrIssuePorts-1:0] fetch_entry_ready_i,
 
     //Thread logic
-    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] eret_thread_id_i,
-    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] ex_thread_id_i,
-    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] pc_commit_thread_id_i,
-    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] debug_thread_id_i
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] eret_thread_id_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] ex_thread_id_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] pc_commit_thread_id_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] debug_thread_id_i
 );
 
   localparam type bht_update_t = struct packed {
@@ -349,25 +349,25 @@ module frontend
   // THREADING
   // thread scheduling
   logic [CVA6Cfg.VLEN-1:0] thread_pc;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] current_thread_id_d, current_thread_id_q;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] current_thread_id_d, current_thread_id_q;
   logic [CVA6Cfg.NUM_THREADS-1:0] thread_ready;
   thread_status_t [CVA6Cfg.NUM_THREADS-1:0] all_threads_status;
 
   logic found_ready_comb;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] candidate_thread_id_comb;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] candidate_thread_id_comb;
 
   logic pc_write_en_comb;
   logic [CVA6Cfg.VLEN-1:0] pc_write_val_comb;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] pc_thread_id_comb;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] pc_thread_id_comb;
 
   // thread stalling on icache miss
   // Track single outstanding icache miss
   logic icache_stall_pending_d, icache_stall_pending_q;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] stalled_thread_id_d, stalled_thread_id_q;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] stalled_thread_id_d, stalled_thread_id_q;
 
   // drive thread_context status updates
   logic status_update_req_comb;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] status_update_thread_id_comb;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] status_update_thread_id_comb;
   thread_status_t status_udpate_val_comb;
 
   // Next PC selection

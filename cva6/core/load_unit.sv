@@ -44,7 +44,7 @@ module load_unit
     // Load transaction ID - ISSUE_STAGE
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_o,
     // Thread identifier ID - ISSUE_STAGE
-    output logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_o,
+    output logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_o,
     // Load result - ISSUE_STAGE
     output logic [CVA6Cfg.XLEN-1:0] result_o,
     // Load exception - ISSUE_STAGE
@@ -98,7 +98,7 @@ module load_unit
   // in order to decouple the response interface from the request interface,
   // we need a a buffer which can hold all inflight memory load requests
   typedef struct packed {
-    logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     logic [CVA6Cfg.TRANS_ID_BITS-1:0]      trans_id;        // scoreboard identifier
     logic [CVA6Cfg.XLEN_ALIGN_BYTES-1:0]   address_offset;  // least significant bits of the address
     fu_op                                  operation;       // type of load

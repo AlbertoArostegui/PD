@@ -41,6 +41,7 @@ package build_config_pkg;
     cfg.ASID_WIDTH = (CVA6Cfg.XLEN == 64) ? 16 : 1;
     cfg.VMID_WIDTH = (CVA6Cfg.XLEN == 64) ? 14 : 1;
     cfg.NUM_THREADS = CVA6Cfg.NUM_THREADS;
+    cfg.NUM_THREADS_LOG = $clog2(CVA6Cfg.NUM_THREADS);
 
     cfg.FpgaEn = CVA6Cfg.FpgaEn;
     cfg.FpgaAlteraEn = CVA6Cfg.FpgaAlteraEn;

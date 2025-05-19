@@ -21,7 +21,7 @@ module raw_checker
     // Type of register source (FPR or GPR) - SCOREBOARD
     input logic rs_fpr_i,
     // Thread_id of the current instruction
-    input logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
     // Registers of destination of the instructions already issued in the scoreboard - SCOREBOARD
     input logic [CVA6Cfg.NR_SB_ENTRIES-1:0][REG_ADDR_SIZE-1:0] rd_i,
     // Type of registers of destination (FPR or GPR) - SCOREBOARD
@@ -31,7 +31,7 @@ module raw_checker
     // Issue pointer - SCOREBOARD
     input logic [CVA6Cfg.TRANS_ID_BITS-1:0] issue_pointer_i,
     // Thread_id - SCOREBOARD
-    input logic [CVA6Cfg.NR_SB_ENTRIES-1:0][$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_ids_i,
+    input logic [CVA6Cfg.NR_SB_ENTRIES-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] thread_ids_i,
 
     // Index in the scoreboard of the most recent RAW dependancy - SCOREBOARD
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] idx_o,

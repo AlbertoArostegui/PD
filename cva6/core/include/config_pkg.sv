@@ -62,6 +62,7 @@ package config_pkg;
   typedef struct packed {
     // Number of threads for FGMT implementation
     int unsigned                NUM_THREADS;
+    int unsigned                NUM_THREADS_LOG;
     // General Purpose Register Size (in bits)
     int unsigned                 XLEN;
     // Virtual address Size (in bits)
@@ -242,6 +243,7 @@ package config_pkg;
     int unsigned XLEN;
     int unsigned VLEN;
     int unsigned NUM_THREADS;
+    int unsigned NUM_THREADS_LOG;
     int unsigned PLEN;
     int unsigned GPLEN;
     bit IS_XLEN32;

@@ -27,7 +27,7 @@ module multiplier
     // Multiplier transaction ID - Mult
     input  logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_i,
 
-    input  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_i,
+    input  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
     // Multiplier instruction is valid - Mult
     input  logic                             mult_valid_i,
     // Multiplier operation - Mult
@@ -43,7 +43,7 @@ module multiplier
     // Multiplier transaction ID - Mult
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id_o,
 
-    output logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_o
+    output logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_o
 );
   // Carry-less multiplication
   logic [CVA6Cfg.XLEN-1:0]
@@ -84,7 +84,7 @@ module multiplier
   logic                             mult_valid_q;
   fu_op operator_d, operator_q;
   logic [CVA6Cfg.XLEN*2-1:0] mult_result_d, mult_result_q;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] thread_id_q;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_q;
 
   // control registers
   logic sign_a, sign_b;

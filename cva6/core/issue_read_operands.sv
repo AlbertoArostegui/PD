@@ -121,6 +121,8 @@ module issue_read_operands
     input logic [CVA6Cfg.NrCommitPorts-1:0] we_gpr_i,
     // FPR write enable - COMMIT_STAGE
     input logic [CVA6Cfg.NrCommitPorts-1:0] we_fpr_i,
+    // Destination register file based on thread - COMMIT_STAGE
+    input logic [NUM_THREADS_LOG-1:0] wb_th_id_i,
     // Issue stall - PERF_COUNTERS
     output logic stall_issue_o,
     // Information dedicated to RVFI - RVFI
@@ -827,27 +829,41 @@ module issue_read_operands
   // ----------------------
   // Integer Register File
   // ----------------------
-  logic [  CVA6Cfg.NrRgprPorts-1:0][CVA6Cfg.XLEN-1:0] rdata;
-  logic [  CVA6Cfg.NrRgprPorts-1:0][             4:0] raddr_pack;
+  logic [NUM_THREADS-1:0][  CVA6Cfg.NrRgprPorts-1:0][CVA6Cfg.XLEN-1:0] rdata;
+  logic [NUM_THREADS-1:0][  CVA6Cfg.NrRgprPorts-1:0][             4:0] raddr_pack;
 
   // pack signals
-  logic [CVA6Cfg.NrCommitPorts-1:0][             4:0] waddr_pack;
-  logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_pack;
-  logic [CVA6Cfg.NrCommitPorts-1:0]                   we_pack;
+  logic [NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0][             4:0] waddr_pack;
+  logic [NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_pack;
+  logic [NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0]                   we_pack   ;
 
   //adjust address to read from register file (when synchronous RAM is used reads take one cycle, so we advance the address)
   for (genvar i = 0; i <= CVA6Cfg.NrIssuePorts - 1; i++) begin
-    assign raddr_pack[i*OPERANDS_PER_INSTR+0] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].rs1[4:0] : issue_instr_i[i].rs1[4:0];
-    assign raddr_pack[i*OPERANDS_PER_INSTR+1] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].rs2[4:0] : issue_instr_i[i].rs2[4:0];
+    logic automatic t;
+    assign t = issue_instr_i_prev[i].thread_id; // AZK: we set the address depending on the selector bit of which TH_ID is this instruction
+    assign raddr_pack[t][i*OPERANDS_PER_INSTR+0] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].rs1[4:0] : issue_instr_i[i].rs1[4:0];
+    assign raddr_pack[t][i*OPERANDS_PER_INSTR+1] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].rs2[4:0] : issue_instr_i[i].rs2[4:0];
     if (OPERANDS_PER_INSTR == 3) begin
-      assign raddr_pack[i*OPERANDS_PER_INSTR+2] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].result[4:0] : issue_instr_i[i].result[4:0];
+      assign raddr_pack[t][i*OPERANDS_PER_INSTR+2] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].result[4:0] : issue_instr_i[i].result[4:0];
     end
+    // AZK: Set the other addresses as 0 to not interfer
+    assign raddr_pack[~t][i*OPERANDS_PER_INSTR+0] = '0;
+    assign raddr_pack[~t][i*OPERANDS_PER_INSTR+1] = '0;
+    if (OPERANDS_PER_INSTR == 3) begin
+      assign raddr_pack[~t][i*OPERANDS_PER_INSTR+2] = '0;
+    end
+
   end
 
   for (genvar i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin : gen_write_back_port
-    assign waddr_pack[i] = waddr_i[i];
-    assign wdata_pack[i] = wdata_i[i];
-    assign we_pack[i]    = we_gpr_i[i];
+    logic automatic [NUM_THREADS_LOG-1:0] t;
+    assign t = wb_th_id_i[i]; // AZK: we set the address depending on the selector bit of which TH_ID is the WB
+    assign waddr_pack[t][i] = waddr_i[i];
+    assign wdata_pack[t][i] = wdata_i[i];
+    assign we_pack[t][i]    = we_gpr_i[i];
+    assign waddr_pack[~t][i] = waddr_i[i];
+    assign wdata_pack[~t][i] = wdata_i[i];
+    assign we_pack[~t][i]    = 0;
   end
   if (CVA6Cfg.FpgaEn) begin : gen_fpga_regfile
     ariane_regfile_fpga #(
@@ -866,21 +882,26 @@ module issue_read_operands
         .we_i     (we_pack)
     );
   end else begin : gen_asic_regfile
-    ariane_regfile #(
-        .CVA6Cfg      (CVA6Cfg),
-        .DATA_WIDTH   (CVA6Cfg.XLEN),
-        .NR_READ_PORTS(CVA6Cfg.NrRgprPorts),
-        .ZERO_REG_ZERO(1)
-    ) i_ariane_regfile (
-        .clk_i,
-        .rst_ni,
-        .test_en_i(1'b0),
-        .raddr_i  (raddr_pack),
-        .rdata_o  (rdata),
-        .waddr_i  (waddr_pack),
-        .wdata_i  (wdata_pack),
-        .we_i     (we_pack)
-    );
+    generate
+      for(genvar i = 0; i < NUM_THREADS; i++) begin
+        ariane_regfile #(
+            .CVA6Cfg      (CVA6Cfg),
+            .DATA_WIDTH   (CVA6Cfg.XLEN),
+            .NR_READ_PORTS(CVA6Cfg.NrRgprPorts),
+            .ZERO_REG_ZERO(1),
+            .THREAD_ID(i)
+        ) i_ariane_regfile (
+            .clk_i,
+            .rst_ni,
+            .test_en_i(1'b0),
+            .raddr_i  (raddr_pack[i]),
+            .rdata_o  (rdata[i]),
+            .waddr_i  (waddr_pack[i]),
+            .wdata_i  (wdata_pack[i]),
+            .we_i     (we_pack[i])
+        );
+      end
+    endgenerate
   end
 
   // -----------------------------
@@ -956,16 +977,19 @@ module issue_read_operands
   end
 
   for (genvar i = 0; i < CVA6Cfg.NrIssuePorts; i++) begin
+    // AZK
+    logic automatic t;
+    assign t = issue_instr_i_prev[i].thread_id;
     if (OPERANDS_PER_INSTR == 3) begin : gen_operand_c
-      assign operand_c_gpr[i] = rdata[i*OPERANDS_PER_INSTR+2];
+      assign operand_c_gpr[i] = rdata[t][i*OPERANDS_PER_INSTR+2];
     end
 
     assign operand_a_regfile[i] = (CVA6Cfg.FpPresent && is_rs1_fpr(
         issue_instr_i[i].op
-    )) ? {{CVA6Cfg.XLEN - CVA6Cfg.FLen{1'b0}}, fprdata[0]} : rdata[i*OPERANDS_PER_INSTR+0];
+    )) ? {{CVA6Cfg.XLEN - CVA6Cfg.FLen{1'b0}}, fprdata[0]} : rdata[t][i*OPERANDS_PER_INSTR+0];
     assign operand_b_regfile[i] = (CVA6Cfg.FpPresent && is_rs2_fpr(
         issue_instr_i[i].op
-    )) ? {{CVA6Cfg.XLEN - CVA6Cfg.FLen{1'b0}}, fprdata[1]} : rdata[i*OPERANDS_PER_INSTR+1];
+    )) ? {{CVA6Cfg.XLEN - CVA6Cfg.FLen{1'b0}}, fprdata[1]} : rdata[t][i*OPERANDS_PER_INSTR+1];
     assign operand_c_regfile[i] = (OPERANDS_PER_INSTR == 3) ? ((CVA6Cfg.FpPresent && is_imm_fpr(
         issue_instr_i[i].op
     )) ? operand_c_fpr : operand_c_gpr[i]) : operand_c_fpr;
