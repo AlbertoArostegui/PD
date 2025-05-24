@@ -25,7 +25,7 @@ module mult
     // Mult transaction ID - ISSUE_STAGE
     output logic     [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id_o,
 
-    output logic     [$clog2(CVA6Cfg.NUM_THREADS)-1:0] mult_thread_id_o
+    output logic     [CVA6Cfg.NUM_THREADS_LOG-1:0] mult_thread_id_o
 );
   logic mul_valid;
   logic div_valid;
@@ -34,8 +34,8 @@ module mult
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] div_trans_id;
   logic [CVA6Cfg.XLEN-1:0] mul_result;
   logic [CVA6Cfg.XLEN-1:0] div_result;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] mul_thread_id;
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] div_thread_id;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] mul_thread_id;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] div_thread_id;
 
   logic div_valid_op;
   logic mul_valid_op;

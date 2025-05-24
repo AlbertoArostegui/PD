@@ -57,10 +57,12 @@ module cva6
       logic                    fetch_valid;      // address translation valid
       logic [CVA6Cfg.PLEN-1:0] fetch_paddr;      // physical address in
       exception_t              fetch_exception;  // exception occurred during fetch
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
     localparam type icache_arsp_t = struct packed {
       logic                    fetch_req;    // address translation request
       logic [CVA6Cfg.VLEN-1:0] fetch_vaddr;  // virtual address out
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // I$ data requests
@@ -70,6 +72,7 @@ module cva6
       logic                    kill_s2;  // kill the last request
       logic                    spec;     // request is speculative
       logic [CVA6Cfg.VLEN-1:0] vaddr;    // 1st cycle: 12 bit index is taken for lookup
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
     localparam type icache_drsp_t = struct packed {
       logic                                ready;  // icache is ready
@@ -78,6 +81,7 @@ module cva6
       logic [CVA6Cfg.FETCH_USER_WIDTH-1:0] user;   // User bits
       logic [CVA6Cfg.VLEN-1:0]             vaddr;  // virtual address out
       exception_t                          ex;     // we've encountered an exception
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // IF/ID Stage
@@ -189,6 +193,7 @@ module cva6
       logic [CVA6Cfg.PLEN-1:0] paddr;  // physical address
       logic nc;  // noncacheable
       logic [CVA6Cfg.MEM_TID_WIDTH-1:0] tid;  // threadi id (used as transaction id in Ariane)
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
     localparam type icache_rtrn_t = struct packed {
       wt_cache_pkg::icache_in_t rtype;  // see definitions above
@@ -201,6 +206,7 @@ module cva6
         logic [CVA6Cfg.ICACHE_SET_ASSOC_WIDTH-1:0] way;  // way to invalidate
       } inv;  // invalidation vector
       logic [CVA6Cfg.MEM_TID_WIDTH-1:0] tid;  // threadi id (used as transaction id in Ariane)
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // D$ data requests
@@ -216,6 +222,7 @@ module cva6
       logic [CVA6Cfg.DcacheIdWidth-1:0]      data_id;
       logic                                  kill_req;
       logic                                  tag_valid;
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
 
     localparam type dcache_req_o_t = struct packed {
@@ -224,6 +231,7 @@ module cva6
       logic [CVA6Cfg.DcacheIdWidth-1:0]     data_rid;
       logic [CVA6Cfg.XLEN-1:0]              data_rdata;
       logic [CVA6Cfg.DCACHE_USER_WIDTH-1:0] data_ruser;
+    logic [NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // Accelerator - CVA6
