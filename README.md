@@ -38,7 +38,11 @@ bash build-toolchain.sh $INSTALL_DIR
 
 4. Install cmake.
 
-5. Set the $RISCV variable
+5. Set the $RISCV variable, this is where we will store the gcc binaries for Risc-V
+It should be $INSTALL_DIR
+```bash
+export RISCV=$INSTALL_DIR
+```
 
 6. Install help2man and device-tree-compiler
 ```bash
@@ -50,38 +54,32 @@ export RISCV=/path/to/toolchain/installation/directory
 pip3 install -r verif/sim/dv/requirements.txt
 ```
 
+8. now, install the custom spike and verilator versions (set up NUM_JOBS for faster installation).
+They should be installed under cva6/tools/spike and cva6/tools/verilator, respectively.
+(from cva6/)
+```bash
+verif/regress/install-spike.sh
+verif/regress/install-verilator.sh
+```
+
+We should set up some variables in order to be able to run the tests
+```bash
+export RISCV=$INSTALL_DIR
+export RISCV_CC=$RISCV/bin/riscv-none-elf-gcc
+export RISCV_OBJCOPY=$RISCV/bin/riscv-none-elf-objcopy
+export SPIKE_INSTALL_DIR={cva6_dir}/tools/spike
+export VERILATOR_INSTALL_DIR={cva6_dir}/tools/verilator
+export DV_SIMULATORS=spike,veri-testharness
+```
+
 Now, we are supposed to be able to run the tests, but I required some more configuration to make it run.
 Go to cva6/verif/sim and `source setup-env.sh`. 
-Export the desired simulators. I have used verilator and spike: `export DV_SIMULATORS=veri-testharness,spike`.
-Before running any test, read the following section.
 
-## 3. Now comes the tricky part.
-If you have executed get-toolchain.sh inside cva6/ folder, you will have verilator-v5.008/ and spike/ folder inside the build/ folder.
-I have sourced the verilator and spike binaries from these folders and have been able to run the tests. For ease of use I have put them in the $PATH.
-```bash
-export PATH="$HOME/cva6/tools/verilator-v5.008/bin:$HOME/cva6/tools/spike/bin:$PATH"
-```
-With this, we can run both verilator and spike binaries.
 
+And try to run the simulators:
 ```bash
-python3 cva6.py --target cv32a60x --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml \
---c_tests ../tests/custom/hello_world/hello_world.c \
---linker=../../config/gen_from_riscv_config/linker/link.ld \
---gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib \
+python3 cva6.py --target cv32a60x --iss=$DV_SIMULATORS --iss_yaml=cva6.yaml --c_tests ../tests/custom/hello_world/hello_world.c --linker=../../config/gen_from_riscv_config/linker/link.ld --gcc_opts="-static -mcmodel=medany -fvisibility=hidden -nostdlib \
 -nostartfiles -g ../tests/custom/common/syscalls.c \
 ../tests/custom/common/crt.S -lgcc \
 -I../tests/custom/env -I../tests/custom/common"
 ```
-
-We can even create another C source file and run it, e. g., fibonacci.c
-You just have to subsittute ../tests/custom/hello_world/hello_world.c with the path to your C source file.
-If you want the waves of the simulation, follow the next steps.
-
-## 4. The even trickier part.
-Running tests from cva6/verif/sim is straight forward.
-According to the official repo, to run the simulation and output the vcd wave files, you have to set TRACE_FAST to 1.
-Sometimes, after setting this environmental variable, the simulation will crash because the script will look in different verilator directories, both cva6/tools/build/verilator/... and cva6/tools/build/verilator-v5.008/...
-What I have done has been just to copy the verilator-v5.008 into another folder named verilator. This way, when it looks in any directory, it will find the source files for the VCD output. There are obviously more clever ways to achieve this functionality, but this just works. I assume you can also link it, but I haven't tried.
-
-
-
