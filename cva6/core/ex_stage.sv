@@ -192,7 +192,7 @@ module ex_stage
     input logic flush_tlb_vvma_i,
     input logic flush_tlb_gvma_i,
     // Privilege mode - CSR_REGFILE
-    input riscv::priv_lvl_t priv_lvl_i,
+    input riscv::priv_lvl_t [NUM_THREADS-1:0] priv_lvl_i,
     // Virtualization mode - CSR_REGFILE
     input logic v_i,
     // Privilege level at which load and stores should happen - CSR_REGFILE

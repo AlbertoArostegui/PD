@@ -56,7 +56,7 @@ module id_stage #(
     // Information dedicated to RVFI - RVFI
     output logic [CVA6Cfg.NrIssuePorts-1:0] rvfi_is_compressed_o,
     // Current privilege level - CSR_REGFILE
-    input riscv::priv_lvl_t priv_lvl_i,
+    input riscv::priv_lvl_t [NUM_THREADS-1:0] priv_lvl_i,
     // Current virtualization mode - CSR_REGFILE
     input logic v_i,
     // Floating point extension status - CSR_REGFILE

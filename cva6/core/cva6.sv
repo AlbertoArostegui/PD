@@ -385,12 +385,12 @@ module cva6
   // Global Signals
   // Signals connecting more than one module
   // ------------------------------------------
-  riscv::priv_lvl_t                             priv_lvl;
+  riscv::priv_lvl_t           [NUM_THREADS-1:0] priv_lvl;
   logic                                         v;
   exception_t                                   ex_commit;  // exception from commit stage
   bp_resolve_t                                  resolved_branch;
-  logic             [         CVA6Cfg.VLEN-1:0] pc_commit;
-  logic                                         eret;
+  logic [NUM_THREADS-1:0] [         CVA6Cfg.VLEN-1:0] pc_commit;
+  logic [NUM_THREADS-1:0]                             eret;
   logic [NUM_THREADS-1:0] [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
   logic             [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack;
 
@@ -420,8 +420,9 @@ module cva6
   // --------------
   // PCGEN <-> CSR
   // --------------
-  logic [CVA6Cfg.VLEN-1:0] trap_vector_base_commit_pcgen;
-  logic [CVA6Cfg.VLEN-1:0] epc_commit_pcgen;
+  logic [NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] trap_vector_base_commit_pcgen;
+  logic [NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] epc_commit_pcgen;
+
   // --------------
   // IF <-> ID
   // --------------
@@ -458,11 +459,7 @@ module cva6
   logic flu_valid_ex_id;
   logic [CVA6Cfg.XLEN-1:0] flu_result_ex_id;
   exception_t flu_exception_ex_id;
-<<<<<<< HEAD
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flu_thread_id_ex_id;
-=======
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] flu_thread_id_ex_id;
->>>>>>> 0e984305 (Propagation of the wb thread_id for store and load)
 
   // ALU
   logic [CVA6Cfg.NrIssuePorts-1:0] alu_valid_id_ex;
@@ -479,21 +476,13 @@ module cva6
   logic [CVA6Cfg.XLEN-1:0] load_result_ex_id;
   logic load_valid_ex_id;
   exception_t load_exception_ex_id;
-<<<<<<< HEAD
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] load_thread_id_ex_id;
-=======
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] load_thread_id_ex_id;
->>>>>>> 0e984305 (Propagation of the wb thread_id for store and load)
 
   logic [CVA6Cfg.XLEN-1:0] store_result_ex_id;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] store_trans_id_ex_id;
   logic store_valid_ex_id;
   exception_t store_exception_ex_id;
-<<<<<<< HEAD
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] store_thread_id_ex_id;
-=======
-  logic [$clog2(CVA6Cfg.NUM_THREADS)-1:0] store_thread_id_ex_id;
->>>>>>> 0e984305 (Propagation of the wb thread_id for store and load)
 
   // MULT
   logic [CVA6Cfg.NrIssuePorts-1:0] mult_valid_id_ex;
@@ -605,8 +594,8 @@ module cva6
   logic [11:0] csr_addr_ex_csr;
   fu_op csr_op_commit_csr;
   logic [CVA6Cfg.XLEN-1:0] csr_wdata_commit_csr;
-  logic [CVA6Cfg.XLEN-1:0] csr_rdata_csr_commit;
-  exception_t csr_exception_csr_commit;
+  logic [NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] csr_rdata_csr_commit;
+  exception_t [NUM_THREADS-1:0] csr_exception_csr_commit;
   logic tvm_csr_id;
   logic tw_csr_id;
   logic vtw_csr_id;
@@ -717,9 +706,9 @@ module cva6
       .pc_commit_i        (pc_commit),
       .ex_valid_i         (ex_commit.valid),
       .resolved_branch_i  (resolved_branch),
-      .eret_i             (eret),
-      .epc_i              (epc_commit_pcgen),
-      .trap_vector_base_i (trap_vector_base_commit_pcgen),
+      .eret_i             (eret[commit_instr_id_commit[0].thread_id]),
+      .epc_i              (epc_commit_pcgen[commit_instr_id_commit[0].thread_id]),
+      .trap_vector_base_i (trap_vector_base_commit_pcgen[commit_instr_id_commit[0].thread_id]),
       .set_debug_pc_i     (set_debug_pc),
       .debug_mode_i       (debug_mode),
       .icache_dreq_o      (icache_dreq_if_cache),
@@ -729,7 +718,7 @@ module cva6
       .fetch_entry_ready_i(fetch_ready_id_if),
       .eret_thread_id_i(),
       .ex_thread_id_i(),
-      .pc_commit_thread_id_i(),
+      .pc_commit_thread_id_i(commit_thd_id),
       .debug_thread_id_i()
   );
 
@@ -1149,7 +1138,7 @@ module cva6
       .pc_o              (pc_commit),
       .csr_op_o          (csr_op_commit_csr),
       .csr_wdata_o       (csr_wdata_commit_csr),
-      .csr_rdata_i       (csr_rdata_csr_commit),
+      .csr_rdata_i       (csr_rdata_csr_commit[commit_instr_id_commit[0].thread_id]),
       .csr_write_fflags_o(csr_write_fflags_commit_cs),
       .csr_exception_i   (csr_exception_csr_commit),
       .commit_lsu_o      (lsu_commit_commit_ex),
@@ -1207,18 +1196,18 @@ generate
         .commit_ack_i            (commit_ack[i]), // AZK: feed only th instructions back to back DONE
         .boot_addr_i             (boot_addr_i[i][CVA6Cfg.VLEN-1:0]), // DONE 
         .hart_id_i               (hart_id_i[i][CVA6Cfg.XLEN-1:0]),   // DONE
-        .ex_i                    (ex_commit),                     // AZK: only feed when this is the th
-        .csr_op_i                (csr_op_commit_csr),             // AZK: mux th input and other NONE
+        .ex_i                    (i == commit_instr_id_commit[0].thread_id ? ex_commit : '0), // AZK: only feed when this is the th DONE
+        .csr_op_i                (i == commit_instr_id_commit[0].thread_id ? csr_op_commit_csr : ADD), // AZK: mux th input and other nop; DONE
         .csr_addr_i              (csr_addr_ex_csr),               // AZK: independent
         .csr_wdata_i             (csr_wdata_commit_csr),          // AZK: independent
-        .csr_rdata_o             (csr_rdata_csr_commit),          // AZK: mux th result to instr
+        .csr_rdata_o             (csr_rdata_csr_commit[i]),       // AZK: mux th result to instr DONE
         .dirty_fp_state_i        (dirty_fp_state),                // No float
         .csr_write_fflags_i      (csr_write_fflags_commit_cs),    // No float
         .dirty_v_state_i         (dirty_v_state),                 // No vector
-        .pc_i                    (pc_commit),                     // AZK: Th dependant
-        .csr_exception_o         (csr_exception_csr_commit),      // AZK: independent
-        .epc_o                   (epc_commit_pcgen),              // AZK: Th dependant
-        .eret_o                  (eret),                          // AZK: Th dependant
+        .pc_i                    (pc_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: Th dependant
+        .csr_exception_o         (csr_exception_csr_commit[i]),   // AZK: independent DONE
+        .epc_o                   (epc_commit_pcgen[i]),           // AZK: Th dependant
+        .eret_o                  (eret[i]),                       // AZK: Th dependant
         .trap_vector_base_o      (trap_vector_base_commit_pcgen), // AZK: Th dependant
         .priv_lvl_o              (priv_lvl),                      // AZK: Th dependant
         .v_o                     (v),                             // No vector
@@ -1806,21 +1795,21 @@ endgenerate
       end
       for (int i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
         if (commit_ack[i] && !commit_instr_id_commit[i].ex.valid) begin
-          $fwrite(f, "%d 0x%0h %s (0x%h) DASM(%h)\n", cycles, commit_instr_id_commit[i].pc, mode,
-                  commit_instr_id_commit[i].ex.tval[31:0], commit_instr_id_commit[i].ex.tval[31:0]);
+          $fwrite(f, "%d 0x%0h %s (0x%h) DASM(%h), thd: %h\n", cycles, commit_instr_id_commit[i].pc, mode,
+                  commit_instr_id_commit[i].ex.tval[31:0], commit_instr_id_commit[i].ex.tval[31:0], commit_thd_id[i]);
         end else if (commit_ack[i] && commit_instr_id_commit[i].ex.valid) begin
           if (commit_instr_id_commit[i].ex.cause == 2) begin
-            $fwrite(f, "Exception Cause: Illegal Instructions, DASM(%h) PC=%h\n",
-                    commit_instr_id_commit[i].ex.tval[31:0], commit_instr_id_commit[i].pc);
+            $fwrite(f, "Exception Cause: Illegal Instructions, DASM(%h) PC=%h, thd: %h\n",
+                    commit_instr_id_commit[i].ex.tval[31:0], commit_instr_id_commit[i].pc, commit_thd_id[i]);
           end else begin
             if (CVA6Cfg.DebugEn && debug_mode) begin
               $fwrite(f, "%d 0x%0h %s (0x%h) DASM(%h)\n", cycles, commit_instr_id_commit[i].pc,
                       mode, commit_instr_id_commit[i].ex.tval[31:0],
                       commit_instr_id_commit[i].ex.tval[31:0]);
             end else begin
-              $fwrite(f, "Exception Cause: %5d, DASM(%h) PC=%h\n",
+              $fwrite(f, "Exception Cause: %5d, DASM(%h) PC=%h, thx: %h\n",
                       commit_instr_id_commit[i].ex.cause, commit_instr_id_commit[i].ex.tval[31:0],
-                      commit_instr_id_commit[i].pc);
+                      commit_instr_id_commit[i].pc, commit_thd_id[i]);
             end
           end
         end

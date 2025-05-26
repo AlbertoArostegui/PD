@@ -32,7 +32,7 @@ module decoder
 ) (
     // Debug (async) request - SUBSYSTEM
     input logic [NUM_THREADS-1:0] debug_req_i,
-    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
+    input logic [NUM_THREADS_LOG-1:0] thread_id_i,
     // PC from fetch stage - FRONTEND
     input logic [CVA6Cfg.VLEN-1:0] pc_i,
     // Is a compressed instruction - compressed_decoder
@@ -62,7 +62,7 @@ module decoder
     // Interrupt control status - CSR_REGFILE
     input irq_ctrl_t irq_ctrl_i,
     // Current privilege level - CSR_REGFILE
-    input riscv::priv_lvl_t priv_lvl_i,
+    input riscv::priv_lvl_t [NUM_THREADS-1:0] priv_lvl_i,
     // Current virtualization mode - CSR_REGFILE
     input logic v_i,
     // Is debug mode - CSR_REGFILE
@@ -220,7 +220,7 @@ module decoder
                     instruction_o.op = ariane_pkg::SRET;
                     // check privilege level, SRET can only be executed in S and M mode
                     // we'll just decode an illegal instruction if we are in the wrong privilege level
-                    if (CVA6Cfg.RVU && priv_lvl_i == riscv::PRIV_LVL_U) begin
+                    if (CVA6Cfg.RVU && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U) begin
                       if (CVA6Cfg.RVH && v_i) begin
                         virtual_illegal_instr = 1'b1;
                       end else begin
@@ -230,7 +230,7 @@ module decoder
                       instruction_o.op = ariane_pkg::ADD;
                     end
                     // if we are in S-Mode and Trap SRET (tsr) is set -> trap on illegal instruction
-                    if (priv_lvl_i == riscv::PRIV_LVL_S && tsr_i) begin
+                    if (priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S && tsr_i) begin
                       if (CVA6Cfg.RVH && v_i) begin
                         virtual_illegal_instr = 1'b1;
                       end else begin
@@ -249,7 +249,7 @@ module decoder
                   instruction_o.op = ariane_pkg::MRET;
                   // check privilege level, MRET can only be executed in M mode
                   // otherwise we decode an illegal instruction
-                  if ((CVA6Cfg.RVS && priv_lvl_i == riscv::PRIV_LVL_S) || (CVA6Cfg.RVU && priv_lvl_i == riscv::PRIV_LVL_U))
+                  if ((CVA6Cfg.RVS && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S) || (CVA6Cfg.RVU && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U))
                     illegal_instr = 1'b1;
                 end
                 // DRET
@@ -267,16 +267,16 @@ module decoder
                   instruction_o.op = ariane_pkg::WFI;
                   // if timeout wait is set, trap on an illegal instruction in S Mode
                   // (after 0 cycles timeout)
-                  if (CVA6Cfg.RVS && priv_lvl_i == riscv::PRIV_LVL_S && tw_i) begin
+                  if (CVA6Cfg.RVS && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S && tw_i) begin
                     illegal_instr = 1'b1;
                     instruction_o.op = ariane_pkg::ADD;
                   end
-                  if (CVA6Cfg.RVH && priv_lvl_i == riscv::PRIV_LVL_S && v_i && vtw_i && !tw_i) begin
+                  if (CVA6Cfg.RVH && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S && v_i && vtw_i && !tw_i) begin
                     virtual_illegal_instr = 1'b1;
                     instruction_o.op = ariane_pkg::ADD;
                   end
                   // we don't support U mode interrupts so WFI is illegal in this context
-                  if (CVA6Cfg.RVU && priv_lvl_i == riscv::PRIV_LVL_U) begin
+                  if (CVA6Cfg.RVU && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U) begin
                     if (CVA6Cfg.RVH && v_i) virtual_illegal_instr = 1'b1;
                     else illegal_instr = 1'b1;
                     instruction_o.op = ariane_pkg::ADD;
@@ -289,13 +289,13 @@ module decoder
                     // only if S mode is supported
                     // otherwise decode an illegal instruction
                     if (CVA6Cfg.RVH && v_i) begin
-                      virtual_illegal_instr = (priv_lvl_i == riscv::PRIV_LVL_S) ? 1'b0 : 1'b1;
+                      virtual_illegal_instr = (priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S) ? 1'b0 : 1'b1;
                     end else begin
-                      illegal_instr    = (CVA6Cfg.RVS && (priv_lvl_i inside {riscv::PRIV_LVL_M, riscv::PRIV_LVL_S}) && instr.itype.rd == '0) ? 1'b0 : 1'b1;
+                      illegal_instr    = (CVA6Cfg.RVS && (priv_lvl_i[thread_id_i] inside {riscv::PRIV_LVL_M, riscv::PRIV_LVL_S}) && instr.itype.rd == '0) ? 1'b0 : 1'b1;
                     end
                     instruction_o.op = ariane_pkg::SFENCE_VMA;
                     // check TVM flag and intercept SFENCE.VMA call if necessary
-                    if (CVA6Cfg.RVS && priv_lvl_i == riscv::PRIV_LVL_S && tvm_i) begin
+                    if (CVA6Cfg.RVS && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S && tvm_i) begin
                       if (CVA6Cfg.RVH && v_i) virtual_illegal_instr = 1'b1;
                       else illegal_instr = 1'b1;
                     end
@@ -306,7 +306,7 @@ module decoder
                       if (v_i) begin
                         virtual_illegal_instr = 1'b1;
                       end else begin
-                        illegal_instr    = (priv_lvl_i inside {riscv::PRIV_LVL_M, riscv::PRIV_LVL_S}) ? 1'b0 : 1'b1;
+                        illegal_instr    = (priv_lvl_i[thread_id_i] inside {riscv::PRIV_LVL_M, riscv::PRIV_LVL_S}) ? 1'b0 : 1'b1;
                       end
                       instruction_o.op = ariane_pkg::HFENCE_VVMA;
                     end else if (instr.instr[31:25] == 7'b110001) begin
@@ -315,11 +315,11 @@ module decoder
                       if (v_i) begin
                         virtual_illegal_instr = 1'b1;
                       end else begin
-                        illegal_instr    = (priv_lvl_i inside {riscv::PRIV_LVL_M, riscv::PRIV_LVL_S}) ? 1'b0 : 1'b1;
+                        illegal_instr    = (priv_lvl_i[thread_id_i] inside {riscv::PRIV_LVL_M, riscv::PRIV_LVL_S}) ? 1'b0 : 1'b1;
                       end
                       instruction_o.op = ariane_pkg::HFENCE_GVMA;
                       // check TVM flag and intercept HFENCE.GVMA call if necessary
-                      if (priv_lvl_i == riscv::PRIV_LVL_S && !v_i && tvm_i) illegal_instr = 1'b1;
+                      if (priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S && !v_i && tvm_i) illegal_instr = 1'b1;
                     end else begin
                       illegal_instr = 1'b1;
                     end
@@ -347,7 +347,7 @@ module decoder
                 // Hypervisor load/store instructions when V=1 cause virtual instruction
                 if (v_i) virtual_illegal_instr = 1'b1;
                 // Hypervisor load/store instructions in U-mode when hstatus.HU=0 cause an illegal instruction trap.
-                else if (!hu_i && priv_lvl_i == riscv::PRIV_LVL_U) illegal_instr = 1'b1;
+                else if (!hu_i && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U) illegal_instr = 1'b1;
                 unique case (instr.rtype.funct7)
                   7'b011_0000: begin
                     if (instr.rtype.rs2 == 5'b0) begin
@@ -1609,11 +1609,11 @@ module decoder
         // this exception is valid
         instruction_o.ex.valid = 1'b1;
         // depending on the privilege mode, set the appropriate cause
-        if (priv_lvl_i == riscv::PRIV_LVL_S && CVA6Cfg.RVS) begin
+        if (priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S && CVA6Cfg.RVS) begin
           instruction_o.ex.cause = (CVA6Cfg.RVH && v_i) ? riscv::ENV_CALL_VSMODE : riscv::ENV_CALL_SMODE;
-        end else if (priv_lvl_i == riscv::PRIV_LVL_U && CVA6Cfg.RVU) begin
+        end else if (priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U && CVA6Cfg.RVU) begin
           instruction_o.ex.cause = riscv::ENV_CALL_UMODE;
-        end else if (priv_lvl_i == riscv::PRIV_LVL_M) begin
+        end else if (priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_M) begin
           instruction_o.ex.cause = riscv::ENV_CALL_MMODE;
         end
       end else if (ebreak) begin
@@ -1688,7 +1688,7 @@ module decoder
         if (irq_ctrl_i.mideleg[interrupt_cause[$clog2(CVA6Cfg.XLEN)-1:0]]) begin
           if (CVA6Cfg.RVH) begin : hyp_int_gen
             if (v_i && irq_ctrl_i.hideleg[interrupt_cause[$clog2(CVA6Cfg.XLEN)-1:0]]) begin
-              if ((irq_ctrl_i.sie && priv_lvl_i == riscv::PRIV_LVL_S) || priv_lvl_i == riscv::PRIV_LVL_U) begin
+              if ((irq_ctrl_i.sie && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S) || priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U) begin
                 instruction_o.ex.valid = 1'b1;
                 instruction_o.ex.cause = interrupt_cause;
               end
@@ -1697,14 +1697,14 @@ module decoder
                 )-1:0]]) begin
               instruction_o.ex.valid = 1'b1;
               instruction_o.ex.cause = interrupt_cause;
-            end else if (!v_i && ((irq_ctrl_i.sie && priv_lvl_i == riscv::PRIV_LVL_S) || priv_lvl_i == riscv::PRIV_LVL_U) && ~irq_ctrl_i.hideleg[interrupt_cause[$clog2(
+            end else if (!v_i && ((irq_ctrl_i.sie && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S) || priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U) && ~irq_ctrl_i.hideleg[interrupt_cause[$clog2(
                     CVA6Cfg.XLEN
                 )-1:0]]) begin
               instruction_o.ex.valid = 1'b1;
               instruction_o.ex.cause = interrupt_cause;
             end
           end else begin
-            if ((CVA6Cfg.RVS && irq_ctrl_i.sie && priv_lvl_i == riscv::PRIV_LVL_S) || (CVA6Cfg.RVU && priv_lvl_i == riscv::PRIV_LVL_U)) begin
+            if ((CVA6Cfg.RVS && irq_ctrl_i.sie && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_S) || (CVA6Cfg.RVU && priv_lvl_i[thread_id_i] == riscv::PRIV_LVL_U)) begin
               instruction_o.ex.valid = 1'b1;
               instruction_o.ex.cause = interrupt_cause;
             end

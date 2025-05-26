@@ -65,7 +65,7 @@ module commit_stage
     // Write the fflags CSR - CSR_REGFILE
     output logic csr_write_fflags_o,
     // Exception or interrupt occurred in CSR stage (the same as commit) - CSR_REGFILE
-    input exception_t csr_exception_i,
+    input exception_t [NUM_THREADS-1:0] csr_exception_i,
     // Commit the pending store - EX_STAGE
     output logic commit_lsu_o,
     // Commit buffer of LSU is ready - EX_STAGE
@@ -110,7 +110,8 @@ module commit_stage
     assign waddr_o[i] = commit_instr_i[i].rd;
   end
 
-  assign pc_o = commit_instr_i[0].pc;
+  assign pc_o[0] = commit_instr_i[0].pc;
+  assign pc_o[1] = commit_instr_i[1].pc;
 
   // Dirty the FP state if we are committing anything related to the FPU
   always_comb begin : dirty_fp_state
@@ -215,7 +216,7 @@ module commit_stage
           csr_op_o    = commit_instr_i[0].op;
           csr_wdata_o = commit_instr_i[0].result;
           if (!commit_drop_i[0]) begin
-            if (!csr_exception_i.valid) begin
+            if (!csr_exception_i[commit_instr_i[0].thread_id].valid) begin
               commit_csr_o = 1'b1;
               wdata_o[0]   = csr_rdata_i;
             end else begin
@@ -384,8 +385,8 @@ module commit_stage
       // ------------------------
       // check for CSR exception
       // ------------------------
-      if (csr_exception_i.valid) begin
-        exception_o      = csr_exception_i;
+      if (csr_exception_i[commit_instr_i[0].thread_id].valid) begin
+        exception_o      = csr_exception_i[commit_instr_i[0].thread_id];
         // if no earlier exception happened the commit instruction will still contain
         // the instruction bits from the ID stage. If a earlier exception happened we don't care
         // as we will overwrite it anyway in the next IF bl
