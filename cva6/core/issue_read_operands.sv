@@ -839,7 +839,7 @@ module issue_read_operands
 
   //adjust address to read from register file (when synchronous RAM is used reads take one cycle, so we advance the address)
   for (genvar i = 0; i <= CVA6Cfg.NrIssuePorts - 1; i++) begin
-    logic automatic t;
+    automatic logic t;
     assign t = issue_instr_i_prev[i].thread_id; // AZK: we set the address depending on the selector bit of which TH_ID is this instruction
     assign raddr_pack[t][i*OPERANDS_PER_INSTR+0] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].rs1[4:0] : issue_instr_i[i].rs1[4:0];
     assign raddr_pack[t][i*OPERANDS_PER_INSTR+1] = CVA6Cfg.FpgaEn && CVA6Cfg.FpgaAlteraEn ? issue_instr_i_prev[i].rs2[4:0] : issue_instr_i[i].rs2[4:0];
@@ -856,7 +856,7 @@ module issue_read_operands
   end
 
   for (genvar i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin : gen_write_back_port
-    logic automatic [NUM_THREADS_LOG-1:0] t;
+    automatic logic [NUM_THREADS_LOG-1:0] t;
     assign t = wb_th_id_i[i]; // AZK: we set the address depending on the selector bit of which TH_ID is the WB
     assign waddr_pack[t][i] = waddr_i[i];
     assign wdata_pack[t][i] = wdata_i[i];
@@ -882,7 +882,6 @@ module issue_read_operands
         .we_i     (we_pack)
     );
   end else begin : gen_asic_regfile
-    generate
       for(genvar i = 0; i < NUM_THREADS; i++) begin
         ariane_regfile #(
             .CVA6Cfg      (CVA6Cfg),
@@ -901,7 +900,6 @@ module issue_read_operands
             .we_i     (we_pack[i])
         );
       end
-    endgenerate
   end
 
   // -----------------------------
@@ -978,7 +976,7 @@ module issue_read_operands
 
   for (genvar i = 0; i < CVA6Cfg.NrIssuePorts; i++) begin
     // AZK
-    logic automatic t;
+    automatic logic t;
     assign t = issue_instr_i_prev[i].thread_id;
     if (OPERANDS_PER_INSTR == 3) begin : gen_operand_c
       assign operand_c_gpr[i] = rdata[t][i*OPERANDS_PER_INSTR+2];

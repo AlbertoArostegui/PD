@@ -1159,7 +1159,6 @@ module cva6
   assign commit_ack[0] = commit_macro_ack & ~commit_drop_id_commit & ~commit_thd_id;
   assign commit_ack[1] = commit_macro_ack & ~commit_drop_id_commit &  commit_thd_id; 
 
-endgenerate
 
   // ---------
   // CSR
@@ -1188,7 +1187,7 @@ generate
     ) csr_regfile_i (
         .clk_i,
         .rst_ni,
-        .time_irq_i[i], // DONE
+        .time_irq_i              (time_irq_i[i]), // DONE
         .flush_o                 (flush_csr_ctrl), // AZK: need to also specify which th to flush and change flushed intructions to nops
         .halt_csr_o              (halt_csr_ctrl), // AZK: we only care of the Oldest halt
         .commit_instr_i          (commit_instr_id_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: always feed the older id for the thread, toggle only ack DONE
@@ -1236,9 +1235,9 @@ generate
         .vs_asid_o               (vs_asid_csr_ex),                // no vector
         .hgatp_ppn_o             (hgatp_ppn_csr_ex),              // no hypervs
         .vmid_o                  (vmid_csr_ex),                   // no hypervs
-        .irq_i[i],                                                // DONE
-        .ipi_i[i],                                                // DONE
-        .debug_req_i[i],                                          // DONE
+        .irq_i                   (irq_i[i]),                      // DONE
+        .ipi_i                   (ipi_i[i]),                      // DONE
+        .debug_req_i             (debug_req_i[i]),                // DONE
         .set_debug_pc_o          (set_debug_pc[i]),               // thd DONE
         .tvm_o                   (tvm_csr_id),                    // no hypervs
         .tw_o                    (tw_csr_id),                     // no hypervs
