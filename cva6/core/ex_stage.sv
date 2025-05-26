@@ -40,8 +40,6 @@ module ex_stage
     input logic rst_ni,
     // Fetch flush request - CONTROLLER
     input logic flush_i,
-    // Debug mode is enabled - CSR_REGFILE
-    input logic debug_mode_i,
     // rs1 forwarding - ISSUE_STAGE
     input logic [CVA6Cfg.NrIssuePorts-1:0][CVA6Cfg.VLEN-1:0] rs1_forwarding_i,
     // rs2 forwarding - ISSUE_STAGE
@@ -210,9 +208,9 @@ module ex_stage
     // Make executable readable Virtual Supervisor - CSR_REGFILE
     input logic vmxr_i,
     // TO_BE_COMPLETED - CSR_REGFILE
-    input logic [CVA6Cfg.PPNW-1:0] satp_ppn_i,
+    input logic [NUM_THREADS-1:0] [CVA6Cfg.PPNW-1:0] satp_ppn_i,
     // TO_BE_COMPLETED - CSR_REGFILE
-    input logic [CVA6Cfg.ASID_WIDTH-1:0] asid_i,
+    input logic [NUM_THREADS-1:0] [CVA6Cfg.ASID_WIDTH-1:0] asid_i,
     // TO_BE_COMPLETED - CSR_REGFILE
     input logic [CVA6Cfg.PPNW-1:0] vsatp_ppn_i,
     // TO_BE_COMPLETED - CSR_REGFILE
@@ -338,7 +336,6 @@ module ex_stage
       .clk_i,
       .rst_ni,
       .v_i,
-      .debug_mode_i,
       .fu_data_i         (one_cycle_data),
       .pc_i,
       .is_zcmt_i,

@@ -585,8 +585,8 @@ module cva6
   logic vs_sum_csr_ex;
   logic [NUM_THREADS-1:0]mxr_csr_ex;
   logic vmxr_csr_ex;
-  logic [CVA6Cfg.PPNW-1:0] satp_ppn_csr_ex;
-  logic [CVA6Cfg.ASID_WIDTH-1:0] asid_csr_ex;
+  logic [NUM_THREADS-1:0] [CVA6Cfg.PPNW-1:0] satp_ppn_csr_ex;
+  logic [NUM_THREADS-1:0] [CVA6Cfg.ASID_WIDTH-1:0] asid_csr_ex;
   logic [CVA6Cfg.PPNW-1:0] vsatp_ppn_csr_ex;
   logic [CVA6Cfg.ASID_WIDTH-1:0] vs_asid_csr_ex;
   logic [CVA6Cfg.PPNW-1:0] hgatp_ppn_csr_ex;
@@ -602,12 +602,12 @@ module cva6
   logic tsr_csr_id;
   logic hu;
   irq_ctrl_t [NUM_THREADS-1:0] irq_ctrl_csr_id;
-  logic dcache_en_csr_nbdcache;
+  logic [NUM_THREADS-1:0] dcache_en_csr_nbdcache;
   logic csr_write_fflags_commit_cs;
-  logic icache_en_csr;
+  logic [NUM_THREADS-1:0] icache_en_csr;
   logic acc_cons_en_csr;
-  logic debug_mode;
-  logic single_step_csr_commit;
+  logic [NUM_THREADS-1:0] debug_mode;
+  logic [NUM_THREADS-1:0] single_step_csr_commit;
   riscv::pmpcfg_t [avoid_neg(CVA6Cfg.NrPMPEntries-1):0] pmpcfg;
   logic [avoid_neg(CVA6Cfg.NrPMPEntries-1):0][CVA6Cfg.PLEN-3:0] pmpaddr;
   logic [31:0] mcountinhibit_csr_perf;
@@ -649,7 +649,7 @@ module cva6
   logic halt_csr_ctrl;
   logic dcache_flush_ctrl_cache;
   logic dcache_flush_ack_cache_ctrl;
-  logic set_debug_pc;
+  logic [NUM_THREADS-1:0] set_debug_pc;
   logic flush_commit;
   logic flush_acc;
 
@@ -977,7 +977,6 @@ module cva6
   ) ex_stage_i (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
-      .debug_mode_i(debug_mode),
       .flush_i(flush_ctrl_ex),
       .rs1_forwarding_i(rs1_forwarding_id_ex),
       .rs2_forwarding_i(rs2_forwarding_id_ex),
@@ -1231,34 +1230,34 @@ generate
         .vs_sum_o                (vs_sum_csr_ex),                 // no hyper
         .mxr_o                   (mxr_csr_ex),                    // AZK: thx
         .vmxr_o                  (vmxr_csr_ex),                   // no vector
-        .satp_ppn_o              (satp_ppn_csr_ex),               // thd
-        .asid_o                  (asid_csr_ex),                   // thd
+        .satp_ppn_o              (satp_ppn_csr_ex[i]),            // thd
+        .asid_o                  (asid_csr_ex[i]),                // thd
         .vsatp_ppn_o             (vsatp_ppn_csr_ex),              // no vector
         .vs_asid_o               (vs_asid_csr_ex),                // no vector
         .hgatp_ppn_o             (hgatp_ppn_csr_ex),              // no hypervs
         .vmid_o                  (vmid_csr_ex),                   // no hypervs
-        .irq_i[i],                                                   // DONE
-        .ipi_i[i],                                                   // DONE
-        .debug_req_i[i],                                             // DONE
-        .set_debug_pc_o          (set_debug_pc),                  // thd
+        .irq_i[i],                                                // DONE
+        .ipi_i[i],                                                // DONE
+        .debug_req_i[i],                                          // DONE
+        .set_debug_pc_o          (set_debug_pc[i]),               // thd DONE
         .tvm_o                   (tvm_csr_id),                    // no hypervs
         .tw_o                    (tw_csr_id),                     // no hypervs
         .vtw_o                   (vtw_csr_id),                    // no hypervs
         .tsr_o                   (tsr_csr_id),                    // no hypervs
         .hu_o                    (hu),                            // no hypervs
-        .debug_mode_o            (debug_mode),                    // thd
-        .single_step_o           (single_step_csr_commit),        // thd Debug will be a pain
-        .icache_en_o             (icache_en_csr),                 // thd
-        .dcache_en_o             (dcache_en_csr_nbdcache),        // thd
-        .acc_cons_en_o           (acc_cons_en_csr),               // disabled?
-        .perf_addr_o             (addr_csr_perf),                 // thd all perf signals are hooked to the thread perf module, so no overlaping data here, also we can disable them
-        .perf_data_o             (data_csr_perf),                 // thd
-        .perf_data_i             (data_perf_csr),                 // thd
-        .perf_we_o               (we_csr_perf),                   // thd
-        .pmpcfg_o                (pmpcfg),                        // thd
-        .pmpaddr_o               (pmpaddr),                       // thd
-        .mcountinhibit_o         (mcountinhibit_csr_perf),        // thd
-        .jvt_o                   (jvt),                           // disabled?
+        .debug_mode_o            (debug_mode[i]),                 // thd DONE
+        .single_step_o           (single_step_csr_commit[i]),     // thd Debug will be a pain DONE
+        .icache_en_o             (icache_en_csr[i]),              // thd DONE
+        .dcache_en_o             (dcache_en_csr_nbdcache[i]),     // thd DONE
+        .acc_cons_en_o           (acc_cons_en_csr),               // no acc 
+        .perf_addr_o             (addr_csr_perf),                 // no perf 
+        .perf_data_o             (data_csr_perf),                 // no perf
+        .perf_data_i             (data_perf_csr),                 // no perf
+        .perf_we_o               (we_csr_perf),                   // no perf
+        .pmpcfg_o                (pmpcfg),                        // no pmp
+        .pmpaddr_o               (pmpaddr),                       // no pmp
+        .mcountinhibit_o         (mcountinhibit_csr_perf),        // no pmp
+        .jvt_o                   (jvt),                           // no perf
         //RVFI
         .rvfi_csr_o              (rvfi_csr)                       // thx, but i think we can ignore, these are probes
     );

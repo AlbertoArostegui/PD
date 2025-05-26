@@ -72,7 +72,7 @@ module id_stage #(
     // Interrupt control status - CSR_REGFILE
     input irq_ctrl_t [NUM_THREADS-1:0] irq_ctrl_i,
     // Is current mode debug ? - CSR_REGFILE
-    input logic debug_mode_i,
+    input logic [NUM_THREADS-1:0] debug_mode_i,
     // Trap virtual memory - CSR_REGFILE
     input logic tvm_i,
     // Timeout wait - CSR_REGFILE

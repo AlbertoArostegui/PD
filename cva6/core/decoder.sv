@@ -66,7 +66,7 @@ module decoder
     // Current virtualization mode - CSR_REGFILE
     input logic v_i,
     // Is debug mode - CSR_REGFILE
-    input logic debug_mode_i,
+    input logic [NUM_THREADS-1:0] debug_mode_i,
     // Floating point extension status - CSR_REGFILE
     input riscv::xs_t fs_i,
     // Virtual floating point extension status - CSR_REGFILE
@@ -257,7 +257,7 @@ module decoder
                   instruction_o.op = ariane_pkg::DRET;
                   if (CVA6Cfg.DebugEn) begin
                     // check that we are in debug mode when executing this instruction
-                    illegal_instr = (!debug_mode_i) ? 1'b1 : illegal_instr;
+                    illegal_instr = (!debug_mode_i[thread_id_i]) ? 1'b1 : illegal_instr;
                   end else begin
                     illegal_instr = 1'b1;
                   end
@@ -1717,7 +1717,7 @@ module decoder
     end
 
     // a debug request has precendece over everything else
-    if (CVA6Cfg.DebugEn && debug_req_i[thread_id_i] && !debug_mode_i) begin
+    if (CVA6Cfg.DebugEn && debug_req_i[thread_id_i] && !debug_mode_i[thread_id_i]) begin
       instruction_o.ex.valid = 1'b1;
       instruction_o.ex.cause = riscv::DEBUG_REQUEST;
     end

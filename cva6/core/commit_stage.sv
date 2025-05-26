@@ -33,7 +33,7 @@ module commit_stage
     // Mark the F state as dirty - CSR_REGFILE
     output logic dirty_fp_state_o,
     // TO_BE_COMPLETED - CSR_REGFILE
-    input logic single_step_i,
+    input logic [NUM_THREADS-1:0] single_step_i,
     // The instruction we want to commit - ISSUE_STAGE
     input scoreboard_entry_t [CVA6Cfg.NrCommitPorts-1:0] commit_instr_i,
     // The instruction is cancelled - ISSUE_STAGE
@@ -324,7 +324,7 @@ module commit_stage
                                 && !(commit_instr_i[0].fu inside {CSR})
                                 && !flush_dcache_i
                                 && !(CVA6Cfg.RVA && instr_0_is_amo)
-                                && !single_step_i) begin
+                                && !single_step_i[commit_instr_i[0].thread_id]) begin
         // only if the first instruction didn't throw an exception and this instruction won't throw an exception
         // and the functional unit is of type ALU, LOAD, CTRL_FLOW, MULT, FPU or FPU_VEC
         if (!commit_instr_i[1].ex.valid && (commit_instr_i[1].fu inside {ALU, LOAD, CTRL_FLOW, MULT, FPU, FPU_VEC})) begin

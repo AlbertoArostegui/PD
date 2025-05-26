@@ -25,8 +25,6 @@ module branch_unit #(
     input logic rst_ni,
     // Virtualization mode state - CSR_REGFILE
     input logic v_i,
-    // Debug mode state - CSR_REGFILE
-    input logic debug_mode_i,
     // FU data needed to execute instruction - ISSUE_STAGE
     input fu_data_t fu_data_i,
     // Instruction PC - ISSUE_STAGE
