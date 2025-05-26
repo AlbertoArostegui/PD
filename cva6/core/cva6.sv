@@ -575,15 +575,15 @@ module cva6
   logic [2:0] frm_csr_id_issue_ex;
   logic [6:0] fprec_csr_ex;
   riscv::xs_t vs;
-  logic enable_translation_csr_ex;
+  logic [NUM_THREADS-1:0] enable_translation_csr_ex;
   logic enable_g_translation_csr_ex;
-  logic en_ld_st_translation_csr_ex;
+  logic [NUM_THREADS-1:0] en_ld_st_translation_csr_ex;
   logic en_ld_st_g_translation_csr_ex;
-  riscv::priv_lvl_t ld_st_priv_lvl_csr_ex;
+  riscv::priv_lvl_t [NUM_THREADS-1:0] ld_st_priv_lvl_csr_ex;
   logic ld_st_v_csr_ex;
-  logic sum_csr_ex;
+  logic [NUM_THREADS-1:0]sum_csr_ex;
   logic vs_sum_csr_ex;
-  logic mxr_csr_ex;
+  logic [NUM_THREADS-1:0]mxr_csr_ex;
   logic vmxr_csr_ex;
   logic [CVA6Cfg.PPNW-1:0] satp_ppn_csr_ex;
   logic [CVA6Cfg.ASID_WIDTH-1:0] asid_csr_ex;
@@ -601,7 +601,7 @@ module cva6
   logic vtw_csr_id;
   logic tsr_csr_id;
   logic hu;
-  irq_ctrl_t irq_ctrl_csr_id;
+  irq_ctrl_t [NUM_THREADS-1:0] irq_ctrl_csr_id;
   logic dcache_en_csr_nbdcache;
   logic csr_write_fflags_commit_cs;
   logic icache_en_csr;
@@ -1204,12 +1204,12 @@ generate
         .dirty_fp_state_i        (dirty_fp_state),                // No float
         .csr_write_fflags_i      (csr_write_fflags_commit_cs),    // No float
         .dirty_v_state_i         (dirty_v_state),                 // No vector
-        .pc_i                    (pc_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: Th dependant
+        .pc_i                    (pc_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: Th dependant DONE
         .csr_exception_o         (csr_exception_csr_commit[i]),   // AZK: independent DONE
-        .epc_o                   (epc_commit_pcgen[i]),           // AZK: Th dependant
-        .eret_o                  (eret[i]),                       // AZK: Th dependant
-        .trap_vector_base_o      (trap_vector_base_commit_pcgen), // AZK: Th dependant
-        .priv_lvl_o              (priv_lvl),                      // AZK: Th dependant
+        .epc_o                   (epc_commit_pcgen[i]),           // AZK: Th dependant DONE
+        .eret_o                  (eret[i]),                       // AZK: Th dependant DONE
+        .trap_vector_base_o      (trap_vector_base_commit_pcgen[i]), // AZK: Th dependant DONE
+        .priv_lvl_o              (priv_lvl),                      // AZK: Th dependant DONE
         .v_o                     (v),                             // No vector
         .acc_fflags_ex_i         (acc_resp_fflags),               // No float
         .acc_fflags_ex_valid_i   (acc_resp_fflags_valid),         // No float
@@ -1219,16 +1219,16 @@ generate
         .frm_o                   (frm_csr_id_issue_ex),           // No float
         .fprec_o                 (fprec_csr_ex),                  // No float
         .vs_o                    (vs),                            // No vector
-        .irq_ctrl_o              (irq_ctrl_csr_id),               // AZK: Th dependant
-        .en_translation_o        (enable_translation_csr_ex),     // AZK: Th dependant (thd)
-        .en_g_translation_o      (enable_g_translation_csr_ex),   // AZK: thd
-        .en_ld_st_translation_o  (en_ld_st_translation_csr_ex),   // AZK: thd
-        .en_ld_st_g_translation_o(en_ld_st_g_translation_csr_ex), // AZK: thd
-        .ld_st_priv_lvl_o        (ld_st_priv_lvl_csr_ex),         // AZK: thd
-        .ld_st_v_o               (ld_st_v_csr_ex),                // AZK: thd
-        .csr_hs_ld_st_inst_i     (csr_hs_ld_st_inst_ex),          // AZK: thd
-        .sum_o                   (sum_csr_ex),                    // AZK: thd
-        .vs_sum_o                (vs_sum_csr_ex),                 // no vector
+        .irq_ctrl_o              (irq_ctrl_csr_id[i]),            // AZK: Th dependant DONE
+        .en_translation_o        (enable_translation_csr_ex[i]),  // AZK: Th dependant (thd) DONE
+        .en_g_translation_o      (enable_g_translation_csr_ex),   // No hyper
+        .en_ld_st_translation_o  (en_ld_st_translation_csr_ex[i]),// AZK: thd DONE
+        .en_ld_st_g_translation_o(en_ld_st_g_translation_csr_ex), // No hyper 
+        .ld_st_priv_lvl_o        (ld_st_priv_lvl_csr_ex[i]),      // AZK: thd
+        .ld_st_v_o               (ld_st_v_csr_ex[i]),             // AZK: thx DONE
+        .csr_hs_ld_st_inst_i     (csr_hs_ld_st_inst_ex),          // No hyper
+        .sum_o                   (sum_csr_ex[i]),                 // AZK: thx DONE
+        .vs_sum_o                (vs_sum_csr_ex),                 // no hyper
         .mxr_o                   (mxr_csr_ex),                    // AZK: thx
         .vmxr_o                  (vmxr_csr_ex),                   // no vector
         .satp_ppn_o              (satp_ppn_csr_ex),               // thd

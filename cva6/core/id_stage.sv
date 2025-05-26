@@ -70,7 +70,7 @@ module id_stage #(
     // Level sensitive (async) interrupts - SUBSYSTEM
     input logic [NUM_THREADS-1:0] [1:0] irq_i,
     // Interrupt control status - CSR_REGFILE
-    input irq_ctrl_t irq_ctrl_i,
+    input irq_ctrl_t [NUM_THREADS-1:0] irq_ctrl_i,
     // Is current mode debug ? - CSR_REGFILE
     input logic debug_mode_i,
     // Trap virtual memory - CSR_REGFILE
@@ -312,7 +312,7 @@ module id_stage #(
     ) decoder_i (
         .debug_req_i,
         .thread_id_i               (fetch_entry_i[i].thread_id),
-        .irq_ctrl_i,
+        .irq_ctrl_i                (irq_ctrl_i[fetch_entry_i[i].thread_id_i]),
         .irq_i,
         .pc_i                      (fetch_entry_i[i].address),
         .is_compressed_i           (is_compressed_deco[i]),

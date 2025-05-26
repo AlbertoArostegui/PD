@@ -180,11 +180,11 @@ module ex_stage
     input acc_mmu_req_t acc_mmu_req_i,
     output acc_mmu_resp_t acc_mmu_resp_o,
     // Enable virtual memory translation - CSR_REGFILE
-    input logic enable_translation_i,
+    input logic [NUM_THREADS-1:0] enable_translation_i,
     // Enable G-Stage memory translation - CSR_REGFILE
     input logic enable_g_translation_i,
     // Enable virtual memory translation for load/stores - CSR_REGFILE
-    input logic en_ld_st_translation_i,
+    input logic [NUM_THREADS-1:0] en_ld_st_translation_i,
     // Enable G-Stage memory translation for load/stores - CSR_REGFILE
     input logic en_ld_st_g_translation_i,
     // Flush TLB - CONTROLLER
@@ -202,11 +202,11 @@ module ex_stage
     // Instruction is hypervisor load/store - CSR_REGFILE
     output logic csr_hs_ld_st_inst_o,
     // Supervisor user memory - CSR_REGFILE
-    input logic sum_i,
+    input logic [NUM_THREADS_LOG-1:0] sum_i,
     // Virtual Supervisor user memory - CSR_REGFILE
     input logic vs_sum_i,
     // Make executable readable - CSR_REGFILE
-    input logic mxr_i,
+    input logic [NUM_THREADS_LOG-1:0] mxr_i,
     // Make executable readable Virtual Supervisor - CSR_REGFILE
     input logic vmxr_i,
     // TO_BE_COMPLETED - CSR_REGFILE
