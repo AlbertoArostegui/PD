@@ -31,7 +31,7 @@ module decoder
     parameter interrupts_t INTERRUPTS = '0
 ) (
     // Debug (async) request - SUBSYSTEM
-    input logic debug_req_i,
+    input logic [NUM_THREADS-1:0] debug_req_i,
     input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
     // PC from fetch stage - FRONTEND
     input logic [CVA6Cfg.VLEN-1:0] pc_i,
@@ -58,7 +58,7 @@ module decoder
     // If an exception occured in fetch stage - FRONTEND
     input exception_t ex_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
-    input logic [1:0] irq_i,
+    input logic [NUM_THREADS-1:0] [1:0] irq_i,
     // Interrupt control status - CSR_REGFILE
     input irq_ctrl_t irq_ctrl_i,
     // Current privilege level - CSR_REGFILE
@@ -1662,7 +1662,7 @@ module decoder
         // Supervisor External Interrupt
         // The logical-OR of the software-writable bit and the signal from the external interrupt controller is
         // used to generate external interrupts to the supervisor
-        if (irq_ctrl_i.mie[riscv::IRQ_S_EXT] && (irq_ctrl_i.mip[riscv::IRQ_S_EXT] | irq_i[ariane_pkg::SupervisorIrq])) begin
+        if (irq_ctrl_i.mie[riscv::IRQ_S_EXT] && (irq_ctrl_i.mip[riscv::IRQ_S_EXT] | irq_i [thread_id_i] [ariane_pkg::SupervisorIrq])) begin
           interrupt_cause = INTERRUPTS.S_EXT;
         end
       end
@@ -1717,7 +1717,7 @@ module decoder
     end
 
     // a debug request has precendece over everything else
-    if (CVA6Cfg.DebugEn && debug_req_i && !debug_mode_i) begin
+    if (CVA6Cfg.DebugEn && debug_req_i[thread_id_i] && !debug_mode_i) begin
       instruction_o.ex.valid = 1'b1;
       instruction_o.ex.cause = riscv::DEBUG_REQUEST;
     end

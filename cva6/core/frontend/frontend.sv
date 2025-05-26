@@ -29,7 +29,7 @@ module frontend
     // Asynchronous reset active low - SUBSYSTEM
     input logic rst_ni,
     // Next PC when reset - SUBSYSTEM
-    input logic [CVA6Cfg.VLEN-1:0] boot_addr_i,
+    input logic [NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] boot_addr_i,
     // Flush branch prediction - zero
     input logic flush_bp_i,
     // Flush requested by FENCE, mis-predict and exception - CONTROLLER
@@ -109,7 +109,6 @@ module frontend
   bht_prediction_t                                               bht_q;
   // instruction fetch is ready
   logic                                                          if_ready;
-  logic [CVA6Cfg.VLEN-1:0] npc_d, npc_q;  // next PC
 
   // indicates whether we come out of reset (then we need to load boot_addr_i)
   logic                                       npc_rst_load_q;

@@ -24,7 +24,7 @@ module thread_context
 
   output thread_status_t [NUM_THREADS-1:0] all_threads_status,
 
-  input logic [CVA6Cfg.VLEN-1:0] boot_addr_i
+  input logic [NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] boot_addr_i
 );
 
 logic [(NUM_THREADS)-1:0][CVA6Cfg.VLEN-1:0] thread_pcs;
@@ -36,7 +36,7 @@ assign all_threads_status = thread_statuses;
 always_ff @(posedge clk_i or negedge rst_ni) begin
   if (~rst_ni) begin
     for (int i = 0; i < NUM_THREADS; i++) begin
-      thread_pcs[i] <= boot_addr_i;
+      thread_pcs[i] <= boot_addr_i[i];
       if (i != 0)
         thread_statuses[i] <= HALTED;
     end

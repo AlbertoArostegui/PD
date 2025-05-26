@@ -332,17 +332,17 @@ module cva6
     // Asynchronous reset active low - SUBSYSTEM
     input logic rst_ni,
     // Reset boot address - SUBSYSTEM
-    input logic [CVA6Cfg.VLEN-1:0] boot_addr_i,
+    input logic [NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] boot_addr_i,
     // Hard ID reflected as CSR - SUBSYSTEM
-    input logic [CVA6Cfg.XLEN-1:0] hart_id_i,
+    input logic [NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] hart_id_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
-    input logic [1:0] irq_i,
+    input logic [NUM_THREADS-1:0] [1:0] irq_i,
     // Inter-processor (async) interrupt - SUBSYSTEM
-    input logic ipi_i,
+    input logic [NUM_THREADS-1:0] ipi_i,
     // Timer (async) interrupt - SUBSYSTEM
-    input logic time_irq_i,
+    input logic [NUM_THREADS-1:0] time_irq_i,
     // Debug (async) request - SUBSYSTEM
-    input logic debug_req_i,
+    input logic [NUM_THREADS-1:0] debug_req_i,
     // Probes to build RVFI, can be left open when not used - RVFI
     output rvfi_probes_t rvfi_probes_o,
     // CVXIF request - SUBSYSTEM
@@ -391,7 +391,7 @@ module cva6
   bp_resolve_t                                  resolved_branch;
   logic             [         CVA6Cfg.VLEN-1:0] pc_commit;
   logic                                         eret;
-  logic             [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
+  logic [NUM_THREADS-1:0] [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
   logic             [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack;
 
   localparam NumPorts = 4;
@@ -560,8 +560,10 @@ module cva6
   // ID <-> COMMIT
   // --------------
   scoreboard_entry_t [CVA6Cfg.NrCommitPorts-1:0] commit_instr_id_commit;
+  scoreboard_entry_t [NUM_THREADS-1:0] commit_instr_muxed;
   logic [CVA6Cfg.NrCommitPorts-1:0] commit_drop_id_commit;
   logic [CVA6Cfg.NrCommitPorts-1:0] commit_ack_commit_id;
+  logic [CVA6Cfg.NrCommitPorts-1:0] commit_thd_id;
 
   // --------------
   // RVFI
@@ -706,6 +708,7 @@ module cva6
   ) i_frontend (
       .clk_i,
       .rst_ni,
+      //.boot_addr_i        (boot_addr_i[CVA6Cfg.VLEN-1:0]),
       .boot_addr_i        (boot_addr_i[CVA6Cfg.VLEN-1:0]),
       .flush_bp_i         (1'b0),
       .flush_i            (flush_ctrl_if),                  // not entirely correct
@@ -1136,6 +1139,7 @@ module cva6
       .commit_instr_i    (commit_instr_id_commit),
       .commit_drop_i     (commit_drop_id_commit),
       .commit_ack_o      (commit_ack_commit_id),
+      .commit_thd_id_o   (commit_thd_id),
       .commit_macro_ack_o(commit_macro_ack),
       .waddr_o           (waddr_commit_id),
       .wdata_o           (wdata_commit_id),
@@ -1162,13 +1166,19 @@ module cva6
       .hfence_gvma_o     (hfence_gvma_commit_controller)
   );
 
-  assign commit_ack = commit_macro_ack & ~commit_drop_id_commit;
+//assign commit_ack = commit_macro_ack & ~commit_drop_id_commit;
+// Azk: Assume only 2 threads
+  assign commit_ack[0] = commit_macro_ack & ~commit_drop_id_commit & ~commit_thd_id;
+  assign commit_ack[1] = commit_macro_ack & ~commit_drop_id_commit &  commit_thd_id; 
+
+endgenerate
 
   // ---------
   // CSR
   // ---------
 generate
   for(genvar i = 0; i < NUM_THREADS; i++) begin
+
     ///////////////////////////////////////////////////////////////////////
     //                                                                   //
     //    In general:                                                    //
@@ -1190,13 +1200,13 @@ generate
     ) csr_regfile_i (
         .clk_i,
         .rst_ni,
-        .time_irq_i, // AZK th dependant
+        .time_irq_i[i], // DONE
         .flush_o                 (flush_csr_ctrl), // AZK: need to also specify which th to flush and change flushed intructions to nops
         .halt_csr_o              (halt_csr_ctrl), // AZK: we only care of the Oldest halt
-        .commit_instr_i          (commit_instr_id_commit[0]), // AZK: always feed the older id for the thread, toggle only ack
-        .commit_ack_i            (commit_ack), // AZK: feed only th instructions back to back
-        .boot_addr_i             (boot_addr_i[CVA6Cfg.VLEN-1:0]), // AZK: Th dependant
-        .hart_id_i               (hart_id_i[CVA6Cfg.XLEN-1:0]),   // AZK: Th dependant
+        .commit_instr_i          (commit_instr_id_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: always feed the older id for the thread, toggle only ack DONE
+        .commit_ack_i            (commit_ack[i]), // AZK: feed only th instructions back to back DONE
+        .boot_addr_i             (boot_addr_i[i][CVA6Cfg.VLEN-1:0]), // DONE 
+        .hart_id_i               (hart_id_i[i][CVA6Cfg.XLEN-1:0]),   // DONE
         .ex_i                    (ex_commit),                     // AZK: only feed when this is the th
         .csr_op_i                (csr_op_commit_csr),             // AZK: mux th input and other NONE
         .csr_addr_i              (csr_addr_ex_csr),               // AZK: independent
@@ -1238,9 +1248,9 @@ generate
         .vs_asid_o               (vs_asid_csr_ex),                // no vector
         .hgatp_ppn_o             (hgatp_ppn_csr_ex),              // no hypervs
         .vmid_o                  (vmid_csr_ex),                   // no hypervs
-        .irq_i,                                                   // thd
-        .ipi_i,                                                   // thd
-        .debug_req_i,                                             // thd
+        .irq_i[i],                                                   // DONE
+        .ipi_i[i],                                                   // DONE
+        .debug_req_i[i],                                             // DONE
         .set_debug_pc_o          (set_debug_pc),                  // thd
         .tvm_o                   (tvm_csr_id),                    // no hypervs
         .tw_o                    (tw_csr_id),                     // no hypervs
@@ -1264,6 +1274,7 @@ generate
         .rvfi_csr_o              (rvfi_csr)                       // thx, but i think we can ignore, these are probes
     );
   end
+endgenerate
 
   // ------------------------
   // Performance Counters

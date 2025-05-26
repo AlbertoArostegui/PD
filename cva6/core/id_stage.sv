@@ -35,7 +35,7 @@ module id_stage #(
     // Fetch flush request - CONTROLLER
     input logic flush_i,
     // Debug (async) request - SUBSYSTEM
-    input logic debug_req_i,
+    input logic [NUM_THREADS-1:0] debug_req_i,
     // Handshake's data between fetch and decode - FRONTEND
     input fetch_entry_t [CVA6Cfg.NrIssuePorts-1:0] fetch_entry_i,
     // Handshake's valid between fetch and decode - FRONTEND
@@ -68,7 +68,7 @@ module id_stage #(
     // Vector extension status - CSR_REGFILE
     input riscv::xs_t vs_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
-    input logic [1:0] irq_i,
+    input logic [NUM_THREADS-1:0] [1:0] irq_i,
     // Interrupt control status - CSR_REGFILE
     input irq_ctrl_t irq_ctrl_i,
     // Is current mode debug ? - CSR_REGFILE

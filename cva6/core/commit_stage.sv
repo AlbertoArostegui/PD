@@ -40,6 +40,8 @@ module commit_stage
     input logic [CVA6Cfg.NrCommitPorts-1:0] commit_drop_i,
     // Acknowledge that we are indeed committing - ISSUE_STAGE
     output logic [CVA6Cfg.NrCommitPorts-1:0] commit_ack_o,
+    // AZK: thd id of the commited instructions
+    output logic [CVA6Cfg.NrCommitPorts-1:0] commit_thd_id_o,
     // Acknowledge that we are indeed committing - CSR_REGFILE
     output logic [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack_o,
     // Register file write address - ISSUE_STAGE
@@ -133,6 +135,7 @@ module commit_stage
   always_comb begin : commit
     // default assignments
     commit_ack_o[0] = 1'b0;
+    commit_thd_id_o[0] = 1'b0;
     commit_macro_ack[0] = 1'b0;
 
     amo_valid_commit_o = 1'b0;
@@ -160,9 +163,11 @@ module commit_stage
         // However we can drop it (with its exception)
         if (commit_drop_i[0]) begin
           commit_ack_o[0] = 1'b1;
+	  commit_thd_id_o[0] = commit_instr_i[0].thread_id;
         end
       end else begin
         commit_ack_o[0] = 1'b1;
+	commit_thd_id_o[0] = commit_instr_i[0].thread_id;
 
         if (CVA6Cfg.RVZCMP && commit_instr_i[0].is_macro_instr && commit_instr_i[0].is_last_macro_instr)
           commit_macro_ack[0] = 1'b1;
@@ -304,6 +309,7 @@ module commit_stage
     if (CVA6Cfg.NrCommitPorts > 1) begin
       commit_macro_ack[1] = 1'b0;
       commit_ack_o[1]     = 1'b0;
+      commit_thd_id_o[1]  = commit_instr_i[1].thread_id;
       we_gpr_o[1]         = 1'b0;
       wdata_o[1]          = commit_instr_i[1].result;
 
@@ -327,6 +333,7 @@ module commit_stage
           else commit_macro_ack[1] = 1'b0;
 
           commit_ack_o[1] = 1'b1;
+      	  commit_thd_id_o[1]  = commit_instr_i[1].thread_id;
 
           if (!commit_drop_i[1]) begin
             if (CVA6Cfg.FpPresent && ariane_pkg::is_rd_fpr(commit_instr_i[1].op))
