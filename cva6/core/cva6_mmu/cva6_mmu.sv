@@ -65,7 +65,7 @@ module cva6_mmu
     output exception_t lsu_exception_o,  // address translation threw an exception
     // General control signals
     input riscv::priv_lvl_t priv_lvl_i,
-    input logic v_i,
+    input logic  v_i,
     input riscv::priv_lvl_t ld_st_priv_lvl_i,
     input logic ld_st_v_i,
     input logic sum_i,
@@ -79,7 +79,7 @@ module cva6_mmu
     input logic [CVA6Cfg.PPNW-1:0] vsatp_ppn_i,
     input logic [CVA6Cfg.PPNW-1:0] hgatp_ppn_i,
 
-    input logic [CVA6Cfg.ASID_WIDTH-1:0] asid_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.ASID_WIDTH-1:0] asid_i,
     input logic [CVA6Cfg.ASID_WIDTH-1:0] vs_asid_i,
     input logic [CVA6Cfg.ASID_WIDTH-1:0] asid_to_be_flushed_i,
     input logic [CVA6Cfg.VMID_WIDTH-1:0] vmid_i,
@@ -125,6 +125,7 @@ module cva6_mmu
     logic [CVA6Cfg.VpnLen-1:0]              vpn;
     logic [CVA6Cfg.ASID_WIDTH-1:0]          asid;
     logic [CVA6Cfg.VMID_WIDTH-1:0]          vmid;
+    logic [HYP_EXT*2:0]                     vmid;
     logic [HYP_EXT*2:0]                     v_st_enbl;  // v_i,g-stage enabled, s-stage enabled
     pte_cva6_t                              content;
     pte_cva6_t                              g_content;
@@ -171,9 +172,12 @@ module cva6_mmu
 
   assign itlb_lu_access = icache_areq_i.fetch_req;
   assign dtlb_lu_access = lsu_req_i;
-  assign itlb_lu_asid   = v_i ? vs_asid_i : asid_i;
   assign dtlb_lu_asid   = (ld_st_v_i || flush_tlb_vvma_i) ? vs_asid_i : asid_i;
 
+  // Alberto: MUX the ASID with the thread_id of the areq
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
+  assign thread_id      = icache_areq_i.thread_id;
+  assign itlb_lu_asid   = asid_i[thread_id];
 
   cva6_tlb #(
       .CVA6Cfg          (CVA6Cfg),

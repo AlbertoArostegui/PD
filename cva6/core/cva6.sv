@@ -57,12 +57,12 @@ module cva6
       logic                    fetch_valid;      // address translation valid
       logic [CVA6Cfg.PLEN-1:0] fetch_paddr;      // physical address in
       exception_t              fetch_exception;  // exception occurred during fetch
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
     localparam type icache_arsp_t = struct packed {
       logic                    fetch_req;    // address translation request
       logic [CVA6Cfg.VLEN-1:0] fetch_vaddr;  // virtual address out
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // I$ data requests
@@ -72,7 +72,7 @@ module cva6
       logic                    kill_s2;  // kill the last request
       logic                    spec;     // request is speculative
       logic [CVA6Cfg.VLEN-1:0] vaddr;    // 1st cycle: 12 bit index is taken for lookup
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
     localparam type icache_drsp_t = struct packed {
       logic                                ready;  // icache is ready
@@ -81,7 +81,7 @@ module cva6
       logic [CVA6Cfg.FETCH_USER_WIDTH-1:0] user;   // User bits
       logic [CVA6Cfg.VLEN-1:0]             vaddr;  // virtual address out
       exception_t                          ex;     // we've encountered an exception
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // IF/ID Stage
@@ -142,7 +142,6 @@ module cva6
     // all the necessary data structures
     // bp_resolve_t
     localparam type bp_resolve_t = struct packed {
-      logic [THREAD_ID_WIDTH-1:0] thread_id;
       logic                       valid;           // prediction with all its values is valid
       logic [CVA6Cfg.VLEN-1:0]    pc;              // PC of predict or mis-predict
       logic [CVA6Cfg.VLEN-1:0]    target_address;  // target address at which to jump, or not
@@ -193,7 +192,7 @@ module cva6
       logic [CVA6Cfg.PLEN-1:0] paddr;  // physical address
       logic nc;  // noncacheable
       logic [CVA6Cfg.MEM_TID_WIDTH-1:0] tid;  // threadi id (used as transaction id in Ariane)
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
     localparam type icache_rtrn_t = struct packed {
       wt_cache_pkg::icache_in_t rtype;  // see definitions above
@@ -206,7 +205,7 @@ module cva6
         logic [CVA6Cfg.ICACHE_SET_ASSOC_WIDTH-1:0] way;  // way to invalidate
       } inv;  // invalidation vector
       logic [CVA6Cfg.MEM_TID_WIDTH-1:0] tid;  // threadi id (used as transaction id in Ariane)
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // D$ data requests
@@ -222,7 +221,7 @@ module cva6
       logic [CVA6Cfg.DcacheIdWidth-1:0]      data_id;
       logic                                  kill_req;
       logic                                  tag_valid;
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
 
     localparam type dcache_req_o_t = struct packed {
@@ -231,7 +230,7 @@ module cva6
       logic [CVA6Cfg.DcacheIdWidth-1:0]     data_rid;
       logic [CVA6Cfg.XLEN-1:0]              data_rdata;
       logic [CVA6Cfg.DCACHE_USER_WIDTH-1:0] data_ruser;
-    logic [NUM_THREADS_LOG-1:0] thread_id;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
     },
 
     // Accelerator - CVA6
@@ -332,17 +331,17 @@ module cva6
     // Asynchronous reset active low - SUBSYSTEM
     input logic rst_ni,
     // Reset boot address - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] boot_addr_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] boot_addr_i,
     // Hard ID reflected as CSR - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] hart_id_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] hart_id_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] [1:0] irq_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] [1:0] irq_i,
     // Inter-processor (async) interrupt - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] ipi_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] ipi_i,
     // Timer (async) interrupt - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] time_irq_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] time_irq_i,
     // Debug (async) request - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] debug_req_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] debug_req_i,
     // Probes to build RVFI, can be left open when not used - RVFI
     output rvfi_probes_t rvfi_probes_o,
     // CVXIF request - SUBSYSTEM
@@ -385,13 +384,13 @@ module cva6
   // Global Signals
   // Signals connecting more than one module
   // ------------------------------------------
-  riscv::priv_lvl_t           [NUM_THREADS-1:0] priv_lvl;
+  riscv::priv_lvl_t           [CVA6Cfg.NUM_THREADS-1:0] priv_lvl;
   logic                                         v;
   exception_t                                   ex_commit;  // exception from commit stage
   bp_resolve_t                                  resolved_branch;
-  logic [NUM_THREADS-1:0] [         CVA6Cfg.VLEN-1:0] pc_commit;
-  logic [NUM_THREADS-1:0]                             eret;
-  logic [NUM_THREADS-1:0] [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [         CVA6Cfg.VLEN-1:0] pc_commit;
+  logic [CVA6Cfg.NUM_THREADS-1:0]                             eret;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
   logic             [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack;
 
   localparam NumPorts = 4;
@@ -420,8 +419,8 @@ module cva6
   // --------------
   // PCGEN <-> CSR
   // --------------
-  logic [NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] trap_vector_base_commit_pcgen;
-  logic [NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] epc_commit_pcgen;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] trap_vector_base_commit_pcgen;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] epc_commit_pcgen;
 
   // --------------
   // IF <-> ID
@@ -549,10 +548,10 @@ module cva6
   // ID <-> COMMIT
   // --------------
   scoreboard_entry_t [CVA6Cfg.NrCommitPorts-1:0] commit_instr_id_commit;
-  scoreboard_entry_t [NUM_THREADS-1:0] commit_instr_muxed;
+  scoreboard_entry_t [CVA6Cfg.NUM_THREADS-1:0] commit_instr_muxed;
   logic [CVA6Cfg.NrCommitPorts-1:0] commit_drop_id_commit;
   logic [CVA6Cfg.NrCommitPorts-1:0] commit_ack_commit_id;
-  logic [CVA6Cfg.NrCommitPorts-1:0] commit_thd_id;
+  logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] commit_thd_id;
 
   // --------------
   // RVFI
@@ -575,18 +574,18 @@ module cva6
   logic [2:0] frm_csr_id_issue_ex;
   logic [6:0] fprec_csr_ex;
   riscv::xs_t vs;
-  logic [NUM_THREADS-1:0] enable_translation_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0] enable_translation_csr_ex;
   logic enable_g_translation_csr_ex;
-  logic [NUM_THREADS-1:0] en_ld_st_translation_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0] en_ld_st_translation_csr_ex;
   logic en_ld_st_g_translation_csr_ex;
-  riscv::priv_lvl_t [NUM_THREADS-1:0] ld_st_priv_lvl_csr_ex;
-  logic ld_st_v_csr_ex;
-  logic [NUM_THREADS-1:0]sum_csr_ex;
+  riscv::priv_lvl_t [CVA6Cfg.NUM_THREADS-1:0] ld_st_priv_lvl_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0]ld_st_v_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0]sum_csr_ex;
   logic vs_sum_csr_ex;
-  logic [NUM_THREADS-1:0]mxr_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0]mxr_csr_ex;
   logic vmxr_csr_ex;
-  logic [NUM_THREADS-1:0] [CVA6Cfg.PPNW-1:0] satp_ppn_csr_ex;
-  logic [NUM_THREADS-1:0] [CVA6Cfg.ASID_WIDTH-1:0] asid_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.PPNW-1:0] satp_ppn_csr_ex;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.ASID_WIDTH-1:0] asid_csr_ex;
   logic [CVA6Cfg.PPNW-1:0] vsatp_ppn_csr_ex;
   logic [CVA6Cfg.ASID_WIDTH-1:0] vs_asid_csr_ex;
   logic [CVA6Cfg.PPNW-1:0] hgatp_ppn_csr_ex;
@@ -594,20 +593,20 @@ module cva6
   logic [11:0] csr_addr_ex_csr;
   fu_op csr_op_commit_csr;
   logic [CVA6Cfg.XLEN-1:0] csr_wdata_commit_csr;
-  logic [NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] csr_rdata_csr_commit;
-  exception_t [NUM_THREADS-1:0] csr_exception_csr_commit;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] csr_rdata_csr_commit;
+  exception_t [CVA6Cfg.NUM_THREADS-1:0] csr_exception_csr_commit;
   logic tvm_csr_id;
   logic tw_csr_id;
   logic vtw_csr_id;
   logic tsr_csr_id;
   logic hu;
-  irq_ctrl_t [NUM_THREADS-1:0] irq_ctrl_csr_id;
-  logic [NUM_THREADS-1:0] dcache_en_csr_nbdcache;
+  irq_ctrl_t [CVA6Cfg.NUM_THREADS-1:0] irq_ctrl_csr_id;
+  logic [CVA6Cfg.NUM_THREADS-1:0] dcache_en_csr_nbdcache;
   logic csr_write_fflags_commit_cs;
-  logic [NUM_THREADS-1:0] icache_en_csr;
+  logic [CVA6Cfg.NUM_THREADS-1:0] icache_en_csr;
   logic acc_cons_en_csr;
-  logic [NUM_THREADS-1:0] debug_mode;
-  logic [NUM_THREADS-1:0] single_step_csr_commit;
+  logic [CVA6Cfg.NUM_THREADS-1:0] debug_mode;
+  logic [CVA6Cfg.NUM_THREADS-1:0] single_step_csr_commit;
   riscv::pmpcfg_t [avoid_neg(CVA6Cfg.NrPMPEntries-1):0] pmpcfg;
   logic [avoid_neg(CVA6Cfg.NrPMPEntries-1):0][CVA6Cfg.PLEN-3:0] pmpaddr;
   logic [31:0] mcountinhibit_csr_perf;
@@ -649,7 +648,7 @@ module cva6
   logic halt_csr_ctrl;
   logic dcache_flush_ctrl_cache;
   logic dcache_flush_ack_cache_ctrl;
-  logic [NUM_THREADS-1:0] set_debug_pc;
+  logic [CVA6Cfg.NUM_THREADS-1:0] set_debug_pc;
   logic flush_commit;
   logic flush_acc;
 
@@ -716,10 +715,7 @@ module cva6
       .fetch_entry_o      (fetch_entry_if_id),
       .fetch_entry_valid_o(fetch_valid_if_id),
       .fetch_entry_ready_i(fetch_ready_id_if),
-      .eret_thread_id_i(),
-      .ex_thread_id_i(),
-      .pc_commit_thread_id_i(commit_thd_id),
-      .debug_thread_id_i()
+      .commit_thread_id_i (commit_thd_id)
   );
 
   // ---------
@@ -1157,14 +1153,14 @@ module cva6
 //assign commit_ack = commit_macro_ack & ~commit_drop_id_commit;
 // Azk: Assume only 2 threads
   assign commit_ack[0] = commit_macro_ack & ~commit_drop_id_commit & ~commit_thd_id;
-  assign commit_ack[1] = commit_macro_ack & ~commit_drop_id_commit &  commit_thd_id; 
+  assign commit_ack[1] = commit_macro_ack & ~commit_drop_id_commit &  commit_thd_id;
 
 
   // ---------
   // CSR
   // ---------
 generate
-  for(genvar i = 0; i < NUM_THREADS; i++) begin
+  for(genvar i = 0; i < CVA6Cfg.NUM_THREADS; i++) begin
 
     ///////////////////////////////////////////////////////////////////////
     //                                                                   //
@@ -1192,7 +1188,7 @@ generate
         .halt_csr_o              (halt_csr_ctrl), // AZK: we only care of the Oldest halt
         .commit_instr_i          (commit_instr_id_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: always feed the older id for the thread, toggle only ack DONE
         .commit_ack_i            (commit_ack[i]), // AZK: feed only th instructions back to back DONE
-        .boot_addr_i             (boot_addr_i[i][CVA6Cfg.VLEN-1:0]), // DONE 
+        .boot_addr_i             (boot_addr_i[i][CVA6Cfg.VLEN-1:0]), // DONE
         .hart_id_i               (hart_id_i[i][CVA6Cfg.XLEN-1:0]),   // DONE
         .ex_i                    (i == commit_instr_id_commit[0].thread_id ? ex_commit : '0), // AZK: only feed when this is the th DONE
         .csr_op_i                (i == commit_instr_id_commit[0].thread_id ? csr_op_commit_csr : ADD), // AZK: mux th input and other nop; DONE
@@ -1221,7 +1217,7 @@ generate
         .en_translation_o        (enable_translation_csr_ex[i]),  // AZK: Th dependant (thd) DONE
         .en_g_translation_o      (enable_g_translation_csr_ex),   // No hyper
         .en_ld_st_translation_o  (en_ld_st_translation_csr_ex[i]),// AZK: thd DONE
-        .en_ld_st_g_translation_o(en_ld_st_g_translation_csr_ex), // No hyper 
+        .en_ld_st_g_translation_o(en_ld_st_g_translation_csr_ex), // No hyper
         .ld_st_priv_lvl_o        (ld_st_priv_lvl_csr_ex[i]),      // AZK: thd
         .ld_st_v_o               (ld_st_v_csr_ex[i]),             // AZK: thx DONE
         .csr_hs_ld_st_inst_i     (csr_hs_ld_st_inst_ex),          // No hyper
@@ -1248,8 +1244,8 @@ generate
         .single_step_o           (single_step_csr_commit[i]),     // thd Debug will be a pain DONE
         .icache_en_o             (icache_en_csr[i]),              // thd DONE
         .dcache_en_o             (dcache_en_csr_nbdcache[i]),     // thd DONE
-        .acc_cons_en_o           (acc_cons_en_csr),               // no acc 
-        .perf_addr_o             (addr_csr_perf),                 // no perf 
+        .acc_cons_en_o           (acc_cons_en_csr),               // no acc
+        .perf_addr_o             (addr_csr_perf),                 // no perf
         .perf_data_o             (data_csr_perf),                 // no perf
         .perf_data_i             (data_perf_csr),                 // no perf
         .perf_we_o               (we_csr_perf),                   // no perf
@@ -1323,7 +1319,7 @@ endgenerate
       // virtualization mode
       .v_i                   (v),
       // flush ports
-      .set_pc_commit_o       (set_pc_ctrl_pcgen),
+      .set_pc_commit_o       (/*setrap_vector_base_it_pc_ctrl_pcgen*/),
       .flush_if_o            (flush_ctrl_if),
       .flush_unissued_instr_o(flush_unissued_instr_ctrl_id),
       .flush_id_o            (flush_ctrl_id),

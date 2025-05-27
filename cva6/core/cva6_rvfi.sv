@@ -351,18 +351,18 @@ module cva6_rvfi
       rvfi_instr_o[i].mem_rdata <= commit_instr_result[i];
       rvfi_instr_o[i].rs1_rdata <= mem_q[commit_pointer[i]].rs1_rdata;
       rvfi_instr_o[i].rs2_rdata <= mem_q[commit_pointer[i]].rs2_rdata;
-      rvfi_to_iti_o.branch_valid[i] <= mem_q[commit_pointer[i]].branch_valid;
-      rvfi_to_iti_o.is_taken[i] <= mem_q[commit_pointer[i]].is_taken;
-      rvfi_to_iti_o.is_compressed[i] <= mem_q[commit_pointer[i]].is_compressed;
-      rvfi_to_iti_o.valid[i] <= valid_iti[i];
-      rvfi_to_iti_o.pc[i] <= pc_iti[i];
-      rvfi_to_iti_o.op[i] <= op_iti[i];
+      //rvfi_to_iti_o.branch_valid[i] <= mem_q[commit_pointer[i]].branch_valid;
+      //rvfi_to_iti_o.is_taken[i] <= mem_q[commit_pointer[i]].is_taken;
+      //rvfi_to_iti_o.is_compressed[i] <= mem_q[commit_pointer[i]].is_compressed;
+      //rvfi_to_iti_o.valid[i] <= valid_iti[i];
+      //rvfi_to_iti_o.pc[i] <= pc_iti[i];
+      //rvfi_to_iti_o.op[i] <= op_iti[i];
     end
-    rvfi_to_iti_o.ex_valid <= ex_commit_valid;
-    rvfi_to_iti_o.cycles <= time_iti;
-    rvfi_to_iti_o.cause <= ex_commit_cause;
-    rvfi_to_iti_o.tval <= tval_iti;
-    rvfi_to_iti_o.priv_lvl <= priv_lvl;
+    //rvfi_to_iti_o.ex_valid <= ex_commit_valid;
+    //rvfi_to_iti_o.cycles <= time_iti;
+    //rvfi_to_iti_o.cause <= ex_commit_cause;
+    //rvfi_to_iti_o.tval <= tval_iti;
+    //rvfi_to_iti_o.priv_lvl <= priv_lvl;
   end
 
 

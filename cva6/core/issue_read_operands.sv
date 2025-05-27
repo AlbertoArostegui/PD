@@ -122,7 +122,7 @@ module issue_read_operands
     // FPR write enable - COMMIT_STAGE
     input logic [CVA6Cfg.NrCommitPorts-1:0] we_fpr_i,
     // Destination register file based on thread - COMMIT_STAGE
-    input logic [NUM_THREADS_LOG-1:0] wb_th_id_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] wb_th_id_i,
     // Issue stall - PERF_COUNTERS
     output logic stall_issue_o,
     // Information dedicated to RVFI - RVFI
@@ -439,7 +439,7 @@ module issue_read_operands
         .rst_ni(rst_ni),
         .rs_i(issue_instr_i[i].rs1),
         .rs_fpr_i(rs1_fpr[i]),
-        .thread_id_i(issue_isntr_i[i].thread_id),
+        .thread_id_i(issue_instr_i[i].thread_id),
         .rd_i(rd_list),
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
@@ -456,7 +456,7 @@ module issue_read_operands
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .rs_i(issue_instr_i[i].rs2),
-        .thread_id_i(issue_isntr_i[i].thread_id),
+        .thread_id_i(issue_instr_i[i].thread_id),
         .rs_fpr_i(rs2_fpr[i]),
         .rd_i(rd_list),
         .rd_fpr_i(rd_fpr),
@@ -474,7 +474,7 @@ module issue_read_operands
         .clk_i(clk_i),
         .rst_ni(rst_ni),
         .rs_i(issue_instr_i[i].result[ariane_pkg::REG_ADDR_SIZE-1:0]),
-        .thread_id_i(issue_isntr_i[i].thread_id),
+        .thread_id_i(issue_instr_i[i].thread_id),
         .rs_fpr_i(rs3_fpr[i]),
         .rd_i(rd_list),
         .rd_fpr_i(rd_fpr),
@@ -829,13 +829,13 @@ module issue_read_operands
   // ----------------------
   // Integer Register File
   // ----------------------
-  logic [NUM_THREADS-1:0][  CVA6Cfg.NrRgprPorts-1:0][CVA6Cfg.XLEN-1:0] rdata;
-  logic [NUM_THREADS-1:0][  CVA6Cfg.NrRgprPorts-1:0][             4:0] raddr_pack;
+  logic [CVA6Cfg.NUM_THREADS-1:0][  CVA6Cfg.NrRgprPorts-1:0][CVA6Cfg.XLEN-1:0] rdata;
+  logic [CVA6Cfg.NUM_THREADS-1:0][  CVA6Cfg.NrRgprPorts-1:0][             4:0] raddr_pack;
 
   // pack signals
-  logic [NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0][             4:0] waddr_pack;
-  logic [NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_pack;
-  logic [NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0]                   we_pack   ;
+  logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0][             4:0] waddr_pack;
+  logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_pack;
+  logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.NrCommitPorts-1:0]                   we_pack   ;
 
   //adjust address to read from register file (when synchronous RAM is used reads take one cycle, so we advance the address)
   for (genvar i = 0; i <= CVA6Cfg.NrIssuePorts - 1; i++) begin
@@ -856,7 +856,7 @@ module issue_read_operands
   end
 
   for (genvar i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin : gen_write_back_port
-    automatic logic [NUM_THREADS_LOG-1:0] t;
+    automatic logic [CVA6Cfg.NUM_THREADS_LOG-1:0] t;
     assign t = wb_th_id_i[i]; // AZK: we set the address depending on the selector bit of which TH_ID is the WB
     assign waddr_pack[t][i] = waddr_i[i];
     assign wdata_pack[t][i] = wdata_i[i];
@@ -882,7 +882,7 @@ module issue_read_operands
         .we_i     (we_pack)
     );
   end else begin : gen_asic_regfile
-      for(genvar i = 0; i < NUM_THREADS; i++) begin
+      for(genvar i = 0; i < CVA6Cfg.NUM_THREADS; i++) begin
         ariane_regfile #(
             .CVA6Cfg      (CVA6Cfg),
             .DATA_WIDTH   (CVA6Cfg.XLEN),

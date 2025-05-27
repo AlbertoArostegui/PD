@@ -43,7 +43,7 @@ module multiplier
     // Multiplier transaction ID - Mult
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id_o,
 
-    output logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_o
+    output logic [CVA6Cfg.NUM_THREADS_LOG-1:0] mult_thread_id_o
 );
   // Carry-less multiplication
   logic [CVA6Cfg.XLEN-1:0]

@@ -79,11 +79,11 @@ module load_store_unit
     input logic [CVA6Cfg.TRANS_ID_BITS-1:0] commit_tran_id_i,
 
     // Enable virtual memory translation - TO_BE_COMPLETED
-    input logic [NUM_THREADS-1:0] enable_translation_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] enable_translation_i,
     // Enable G-Stage memory translation - TO_BE_COMPLETED
     input logic enable_g_translation_i,
     // Enable virtual memory translation for load/stores - TO_BE_COMPLETED
-    input logic [NUM_THREADS-1:0] en_ld_st_translation_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] en_ld_st_translation_i,
     // Enable G-Stage memory translation for load/stores - TO_BE_COMPLETED
     input logic en_ld_st_g_translation_i,
 
@@ -97,9 +97,9 @@ module load_store_unit
     output icache_areq_t icache_areq_o,
 
     // Current privilege mode - CSR_REGFILE
-    input  riscv::priv_lvl_t [NUM_THREADS-1:0]        priv_lvl_i,
+    input  riscv::priv_lvl_t [CVA6Cfg.NUM_THREADS-1:0]        priv_lvl_i,
     // Current virtualization mode - CSR_REGFILE
-    input  logic                                      v_i,
+    input  logic                     v_i,
     // Privilege level at which load and stores should happen - CSR_REGFILE
     input  riscv::priv_lvl_t                          ld_st_priv_lvl_i,
     // Virtualization mode at which load and stores should happen - CSR_REGFILE
@@ -117,7 +117,7 @@ module load_store_unit
     // TO_BE_COMPLETED - TO_BE_COMPLETED
     input  logic             [      CVA6Cfg.PPNW-1:0] satp_ppn_i,
     // TO_BE_COMPLETED - TO_BE_COMPLETED
-    input  logic             [CVA6Cfg.ASID_WIDTH-1:0] asid_i,
+    input  logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.ASID_WIDTH-1:0] asid_i, // Alberto: both asids come from CSRs
     // TO_BE_COMPLETED - TO_BE_COMPLETED
     input  logic             [      CVA6Cfg.PPNW-1:0] vsatp_ppn_i,
     // TO_BE_COMPLETED - TO_BE_COMPLETED

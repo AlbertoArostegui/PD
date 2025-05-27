@@ -13,6 +13,7 @@
 // Description: Ariane Instruction Fetch Frontend
 //
 // This module interfaces with the instruction cache, handles control
+
 // change request from the back-end and does branch prediction.
 
 module frontend
@@ -29,21 +30,21 @@ module frontend
     // Asynchronous reset active low - SUBSYSTEM
     input logic rst_ni,
     // Next PC when reset - SUBSYSTEM
-    input logic [NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] boot_addr_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] boot_addr_i, //dup
     // Flush branch prediction - zero
     input logic flush_bp_i,
     // Flush requested by FENCE, mis-predict and exception - CONTROLLER
-    input logic flush_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] flush_i, // dup
     // Halt requested by WFI and Accelerate port - CONTROLLER
-    input logic halt_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] halt_i, //dup
     // Set COMMIT PC as next PC requested by FENCE, CSR side-effect and Accelerate port - CONTROLLER
-    input logic set_pc_commit_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] set_pc_commit_i, //dup
     // COMMIT PC - COMMIT
-    input logic [CVA6Cfg.VLEN-1:0] pc_commit_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] pc_commit_i, //dup
     // Exception event - COMMIT
     input logic ex_valid_i,
     // Mispredict event and next PC - EXECUTE
-    input bp_resolve_t resolved_branch_i,
+    input bp_resolve_t [CVA6Cfg.NUM_THREADS-1:0] resolved_branch_i, //dup. Alberto: WHY? It comes from execute, shouldn't be duped
     // Return from exception event - CSR
     input logic eret_i,
     // Next PC when returning from exception - CSR
@@ -51,7 +52,7 @@ module frontend
     // Next PC when jumping into exception - CSR
     input logic [CVA6Cfg.VLEN-1:0] trap_vector_base_i,
     // Debug event - CSR
-    input logic set_debug_pc_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] set_debug_pc_i, // dup
     // Debug mode state - CSR
     input logic debug_mode_i,
     // Handshake between CACHE and FRONTEND (fetch) - CACHES
@@ -66,10 +67,7 @@ module frontend
     input logic [CVA6Cfg.NrIssuePorts-1:0] fetch_entry_ready_i,
 
     //Thread logic
-    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] eret_thread_id_i,
-    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] ex_thread_id_i,
-    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] pc_commit_thread_id_i,
-    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] debug_thread_id_i
+    input logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] commit_thread_id_i
 );
 
   localparam type bht_update_t = struct packed {
@@ -350,188 +348,130 @@ module frontend
   logic [CVA6Cfg.VLEN-1:0] thread_pc;
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] current_thread_id_d, current_thread_id_q;
   logic [CVA6Cfg.NUM_THREADS-1:0] thread_ready;
-  thread_status_t [CVA6Cfg.NUM_THREADS-1:0] all_threads_status;
 
   logic found_ready_comb;
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] candidate_thread_id_comb;
 
-  logic pc_write_en_comb;
-  logic [CVA6Cfg.VLEN-1:0] pc_write_val_comb;
-  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] pc_thread_id_comb;
-
   // thread stalling on icache miss
   // Track single outstanding icache miss
-  logic icache_stall_pending_d, icache_stall_pending_q;
+  logic icache_stall_kpending_d, icache_stall_pending_q;
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] stalled_thread_id_d, stalled_thread_id_q;
 
   // drive thread_context status updates
   logic status_update_req_comb;
-  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] status_update_thread_id_comb;
+  logic status_update_thread_id_comb;
   thread_status_t status_udpate_val_comb;
 
-  // Next PC selection
-  logic [CVA6Cfg.VLEN-1:0] current_thread_pc_comb;
+    // Alberto: thread selection logic
+    thread_status_t [CVA6Cfg.NUM_THREADS-1:0] thread_statuses; // Logic only for 2 threads
+    logic current_thread_d, current_thread_q;
 
-  // Status update logic
-  logic wants_to_fetch_for_current;
-  logic cache_accepting_req;
-  logic current_thread_is_ready;
+    always_comb begin : thread_selection
+      current_thread_d = current_thread_q;
+      if (thread_statuses[!current_thread_q] == READY &&
+          !replay /*We do not want to starve 1 thread. No switch if instrQ is not rdy*/)
+        current_thread_d = !current_thread_q;
+    end
 
-  thread_status_t status_update_val_comb;
+    always_comb begin : thread_status_update_logic
+      status_update_req_comb = 1'b0;
+      status_update_thread_id_comb = 'x;
+      status_update_val_comb = READY;
 
-  thread_context #(
-    .CVA6Cfg(CVA6Cfg),
-    .NUM_THREADS(CVA6Cfg.NUM_THREADS)
-  ) i_thread_context (
-    .clk_i,
-    .rst_ni,
-    .pc_read_thread_id_i(current_thread_id_q),
-    .pc_read_value_o(thread_pc),
+      icache_stall_pending_d = icache_stall_pending_q;
+      stalled_thread_id_d = stalled_thread_id_q;
 
-    .pc_write_thread_id_i(pc_thread_id_comb),
-    .pc_write_i(pc_write_en_comb),
-    .pc_write_value_i(pc_write_val_comb),
+      cache_accepting_req = icache_dreq_i.ready; // Hit in the cache (I assume) based on fetch addr
+      current_thread_is_ready = thread_statuses[current_thread_q] == READY;
 
-    .thread_status_update_i(status_update_req_comb),
-    .thread_status_update_id_i(status_update_thread_id_comb),
-    .thread_status_value_i(status_update_val_comb),
-    .all_threads_status(all_threads_status),
-    .boot_addr_i(boot_addr_i)
-  );
-
-  always_comb begin : thread_schedule
-    current_thread_id_d = current_thread_id_q;
-    found_ready_comb = 1'b0;
-    candidate_thread_id_comb = 'x;
-
-    if (instr_queue_ready && !halt_i) begin
-      for (int i = 1; i < CVA6Cfg.NUM_THREADS; i++) begin
-        candidate_thread_id_comb = (current_thread_id_q + i) % CVA6Cfg.NUM_THREADS;
-
-        if (all_threads_status[candidate_thread_id_comb] == READY) begin
-          current_thread_id_d = candidate_thread_id_comb;
-          found_ready_comb = 1'b1;
-          break;
-        end
+      if (instr_queue_ready && !cache_accepting_req &&
+          current_thread_is_ready && !icache_stall_pending_q) begin
+          status_update_req_comb = 1'b1;
+          status_update_thread_id_comb = current_thread_q;
+          stalled_thread_id_d = current_thread_q;
+          status_update_val_comb = STALLED_ICACHE;
+          icache_stall_pending_d = 1'b1;
       end
-    end
-  end
 
-  for (genvar i = 0; i < CVA6Cfg.NUM_THREADS; i++) begin : gen_tid_fetch_entry
-    assign fetch_entry_o[i].thread_id = current_thread_id_q;
-  end
-  assign icache_dreq_o.vaddr = thread_pc;
+      if (icache_stall_pending_q && icache_dreq_i.ready) begin
+        if (thread_statuses[stalled_thread_id_q] == STALLED_ICACHE) begin
+          if (icache_dreq_i.ex.valid)
+            status_udpate_req_comb = 1'b0;
+          else begin
+            status_update_req_comb = 1'b1;
+            status_update_val_comb = READY;
+            status_update_thread_id_comb = stalled_thread_id_q;
+          end
+        end
+        icache_stall_pending_d = 1'b0;
+      end
+      if (flush_i)
+        icache_stall_pending_d = 1'b0;
 
-  // -------------------
-  // Next PC
-  // -------------------
-  // next PC (NPC) can come from (in order of precedence):
-  // 0. Default assignment/replay instruction
-  // 1. Branch Predict taken
-  // 2. Control flow change request (misprediction)
-  // 3. Return from environment call
-  // 4. Exception/Interrupt
-  // 5. Pipeline Flush because of CSR side effects
-  // Mis-predict handling is a little bit different
-  // select PC a.k.a PC Gen
-  //
-  // TODO: Next PC control logic (i. e. the signals that points out if there has been
-  // a branch, exception, ret and so on) must be associated with a thread id
-  always_comb begin : npc_multithreaded
-    // Default: no write
-    pc_write_en_comb = 1'b0;
-    pc_thread_id_comb = current_thread_id_q;
-    pc_write_val_comb = 0;
+    end : thread_status_update_logic
 
-    current_thread_pc_comb = thread_pc;
-    if (bp_valid) begin
-      pc_write_en_comb = 1'b1;
-      pc_thread_id_comb = current_thread_id_q;
-      // TODO: BP logic should take into account the thread ID. BP needs to be partitioned, or, at
-      // least, address how are we going to to it.
-      pc_write_val_comb = predict_address;
-    end else if (if_ready) begin
-      pc_write_en_comb = 1'b1;
-      pc_write_val_comb = {
-        current_thread_pc_comb[CVA6Cfg.VLEN-1:CVA6Cfg.FETCH_ALIGN_BITS] + 1, {CVA6Cfg.FETCH_ALIGN_BITS{1'b0}}
-      };
-      pc_thread_id_comb = current_thread_id_q;
-    end else if (replay) begin
-      pc_write_en_comb = 1'b1;
-      pc_thread_id_comb = current_thread_id_q;
-      pc_write_val_comb = replay_addr;
-    end else if (resolved_branch_i.valid && resolved_branch_i.is_mispredict) begin
-      pc_write_en_comb = 1'b1;
-      pc_thread_id_comb = resolved_branch_i.thread_id;
-      pc_write_val_comb = resolved_branch_i.target_address;
-    end else if (eret_i) begin
-      pc_write_en_comb = 1'b1;
-      pc_thread_id_comb = eret_thread_id_i;
-      pc_write_val_comb = epc_i;
-    end else if (ex_valid_i) begin
-      pc_write_en_comb = 1'b1;
-      pc_thread_id_comb = ex_thread_id_i;
-      pc_write_val_comb = trap_vector_base_i;
-    end else if (set_pc_commit_i) begin
-      pc_write_en_comb = 1'b1;
-      pc_thread_id_comb = pc_commit_thread_id_i;
-      pc_write_val_comb = pc_commit_i + (halt_i ? '0 : {{CVA6Cfg.VLEN - 3{1'b0}}, 3'b100});
-    end
-    if (CVA6Cfg.DebugEn && set_debug_pc_i) begin
-      pc_write_en_comb  = 1'b1;
-      pc_thread_id_comb = debug_thread_id_i;
-      pc_write_val_comb = CVA6Cfg.DmBaseAddress[CVA6Cfg.VLEN-1:0] + CVA6Cfg.HaltAddress[CVA6Cfg.VLEN-1:0];
-    end
-  end : npc_multithreaded
+
+    // Alberto: MUX the thread IDs and the commit ports
+    logic [CVA6Cfg.VLEN-1:0] fetch_th0, fetch_th1;
+    assign icache_dreq_o.vaddr = current_thread_q ? fetch_th1 : fetch_th0;
+
+    next_pc #(
+    ) i_next_pc_thread0 (
+        .clk_i,
+        .rst_ni,
+        .npc_rst_load_i(npc_rst_load_q),
+        .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
+        // From this thread
+        .bp_valid_i(bp_valid & (current_thread_q == 0)),
+        .if_ready_i(if_ready & (current_thread_q == 0)),
+        .replay_i(replay & (current_thread_q == 0)),
+        .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == 0)),
+        // From commit
+        .eret_i(eret_i & (commit_thread_id_i[0] == 0)),
+        .ex_valid_i(ex_valid_i & (commit_thread_id_i[0] == 0)),
+        .set_pc_commit_i(set_pc_commit_i & (commit_thread_id_i[0] == 0)),
+        .set_debug_pc_i(set_debug_pc_i[0]),
+        .halt_i(halt_i),
+
+        .predict_address_i(predict_address),
+        .replay_addr_i(replay_addr),
+        .eret_pc_i(eret_pc_i),
+        .trap_vector_base_i,
+        .target_address_mispredict_i(resolved_branch_i.target_address),
+        .pc_commit_i(pc_commit_i[0]),
+
+        .pc_o(fetch_th0)
+    );
+
+    next_pc #(
+    ) i_next_pc_thread1 (
+        .clk_i,
+        .rst_ni,
+        .npc_rst_load_i(npc_rst_load_q),
+        .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
+        .bp_valid_i(bp_valid & (current_thread_q == 1)),
+        .if_ready_i(if_ready & (current_thread_q == 1)),
+        .replay_i(replay & (current_thread_q == 1)),
+        .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == 1)),
+        .eret_i(eret_i & (commit_thread_id_i[0] == 1)),
+        .ex_valid_i(ex_valid_i & (commit_thread_id_i[0] == 1)),
+        .set_pc_commit_i(set_pc_commit_i & (commit_thread_id_i[0] == 1)),
+        .set_debug_pc_i(set_debug_pc_i[1]),
+        .halt_i(halt_i  /* & thread that halts*/),
+
+        .predict_address_i(predict_address),
+        .replay_addr_i(replay_addr),
+        .eret_pc_i(eret_pc_i),
+        .trap_vector_base_i,
+        .target_address_mispredict_i(resolved_branch_i.target_address),
+        .pc_commit_i(pc_commit_i[1]),
+
+        .pc_o(fetch_th1)
+    );
 
   logic [CVA6Cfg.FETCH_WIDTH-1:0] icache_data;
   // re-align the cache line
   assign icache_data = icache_dreq_i.data >> {shamt, 4'b0};
-
-  always_comb begin : status_update_logic
-    status_update_req_comb = 1'b0;
-    status_update_thread_id_comb = 'x;
-    status_udpate_val_comb = READY;
-
-    icache_stall_pending_d = icache_stall_pending_q;
-    stalled_thread_id_d = stalled_thread_id_q;
-
-    wants_to_fetch_for_current = instr_queue_ready;
-    cache_accepting_req = icache_dreq_i.ready;
-    current_thread_is_ready = (all_threads_status[current_thread_id_q] == READY);
-
-    // stalling
-    if (wants_to_fetch_for_current && !cache_accepting_req &&
-      current_thread_is_ready && !icache_stall_pending_q) begin
-      status_update_req_comb = 1'b1;
-      status_update_thread_id_comb = current_thread_id_q;
-      status_update_val_comb = STALLED_ICACHE;
-
-      icache_stall_pending_d = 1'b1;
-      stalled_thread_id_d = current_thread_id_q;
-    end
-
-    // un-stalling
-    if (icache_stall_pending_q && icache_dreq_i.ready) begin
-      if (all_threads_status[stalled_thread_id_q] == STALLED_ICACHE) begin
-        if (icache_dreq_i.ex.valid) begin
-          // If there is an exception, we do not set to ready
-          status_update_req_comb = 1'b0;
-        end else begin
-          status_update_req_comb = 1'b1;
-          status_update_thread_id_comb = stalled_thread_id_q;
-          status_update_val_comb = READY;
-        end
-      end
-      icache_stall_pending_d = 1'b0;
-    end
-
-    if (flush_i) begin
-      icache_stall_pending_d = 1'b0;
-
-    end
-
-  end : status_update_logic
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -548,10 +488,13 @@ module frontend
       current_thread_id_q  <= '0;
       icache_stall_pending_q <= '0;
       stalled_thread_id_q <= '0;
+      current_thread_q <= 0;
 
     end else begin
+      current_thread_q <= current_thread_d;
       speculative_q  <= speculative_d;
       icache_valid_q <= icache_dreq_i.valid;
+      thread_statuses[status_update_thread_id_comb] <= status_update_val_comb;
 
       current_thread_id_q <= current_thread_id_d;
       icache_stall_pending_q <= icache_stall_pending_d;

@@ -298,6 +298,7 @@ module issue_stage
       .wdata_i,
       .we_gpr_i,
       .we_fpr_i,
+      .wb_th_id_i(0), // TODO
       .stall_issue_o,
       .rvfi_rs1_o              (rvfi_rs1_o),
       .rvfi_rs2_o              (rvfi_rs2_o)

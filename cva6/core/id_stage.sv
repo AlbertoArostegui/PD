@@ -35,7 +35,7 @@ module id_stage #(
     // Fetch flush request - CONTROLLER
     input logic flush_i,
     // Debug (async) request - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] debug_req_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] debug_req_i,
     // Handshake's data between fetch and decode - FRONTEND
     input fetch_entry_t [CVA6Cfg.NrIssuePorts-1:0] fetch_entry_i,
     // Handshake's valid between fetch and decode - FRONTEND
@@ -56,7 +56,7 @@ module id_stage #(
     // Information dedicated to RVFI - RVFI
     output logic [CVA6Cfg.NrIssuePorts-1:0] rvfi_is_compressed_o,
     // Current privilege level - CSR_REGFILE
-    input riscv::priv_lvl_t [NUM_THREADS-1:0] priv_lvl_i,
+    input riscv::priv_lvl_t [CVA6Cfg.NUM_THREADS-1:0] priv_lvl_i,
     // Current virtualization mode - CSR_REGFILE
     input logic v_i,
     // Floating point extension status - CSR_REGFILE
@@ -68,11 +68,11 @@ module id_stage #(
     // Vector extension status - CSR_REGFILE
     input riscv::xs_t vs_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] [1:0] irq_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] [1:0] irq_i,
     // Interrupt control status - CSR_REGFILE
-    input irq_ctrl_t [NUM_THREADS-1:0] irq_ctrl_i,
+    input irq_ctrl_t [CVA6Cfg.NUM_THREADS-1:0] irq_ctrl_i,
     // Is current mode debug ? - CSR_REGFILE
-    input logic [NUM_THREADS-1:0] debug_mode_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] debug_mode_i,
     // Trap virtual memory - CSR_REGFILE
     input logic tvm_i,
     // Timeout wait - CSR_REGFILE
@@ -312,7 +312,7 @@ module id_stage #(
     ) decoder_i (
         .debug_req_i,
         .thread_id_i               (fetch_entry_i[i].thread_id),
-        .irq_ctrl_i                (irq_ctrl_i[fetch_entry_i[i].thread_id_i]),
+        .irq_ctrl_i                (irq_ctrl_i[fetch_entry_i[i].thread_id]),
         .irq_i,
         .pc_i                      (fetch_entry_i[i].address),
         .is_compressed_i           (is_compressed_deco[i]),

@@ -19,9 +19,10 @@ package cva6_config_pkg;
   localparam CVA6ConfigDataUserWidth = 32;  // axi_pkg.sv
 
   localparam config_pkg::cva6_user_cfg_t cva6_cfg = '{
+      NUM_THREADS: unsigned'(2),
+      NUM_THREADS_LOG: 1, // log2(NUM_THREADS)
       XLEN: unsigned'(CVA6ConfigXlen),
       VLEN: unsigned'(32),
-      NUM_THREADS: unsigned'(2),
       FpgaEn: bit'(0),
       FpgaAlteraEn: bit'(0),
       TechnoCut: bit'(1),

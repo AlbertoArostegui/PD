@@ -64,6 +64,7 @@ module branch_unit #(
     resolved_branch_o.valid = branch_valid_i;
     resolved_branch_o.is_mispredict = 1'b0;
     resolved_branch_o.cf_type = branch_predict_i.cf;
+    resolved_branch_o.thread_id = fu_data_i.thread_id;
     // calculate next PC, depending on whether the instruction is compressed or not this may be different
     // TODO(zarubaf): We already calculate this a couple of times, maybe re-use?
     next_pc                          = pc_i + ((is_compressed_instr_i) ? {{CVA6Cfg.VLEN-2{1'b0}}, 2'h2} : {{CVA6Cfg.VLEN-3{1'b0}}, 3'h4});
@@ -85,7 +86,7 @@ module branch_unit #(
       if (CVA6Cfg.RVZCMT) begin
         if (is_zcmt_i) begin
           // Unconditional jump handling
-          resolved_branch_o.is_mispredict = 1'b1;  // miss prediction for ZCMT 
+          resolved_branch_o.is_mispredict = 1'b1;  // miss prediction for ZCMT
           resolved_branch_o.cf_type = ariane_pkg::JumpR;
         end
       end

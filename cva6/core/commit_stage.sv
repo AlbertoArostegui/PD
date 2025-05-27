@@ -33,7 +33,7 @@ module commit_stage
     // Mark the F state as dirty - CSR_REGFILE
     output logic dirty_fp_state_o,
     // TO_BE_COMPLETED - CSR_REGFILE
-    input logic [NUM_THREADS-1:0] single_step_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] single_step_i,
     // The instruction we want to commit - ISSUE_STAGE
     input scoreboard_entry_t [CVA6Cfg.NrCommitPorts-1:0] commit_instr_i,
     // The instruction is cancelled - ISSUE_STAGE
@@ -41,7 +41,7 @@ module commit_stage
     // Acknowledge that we are indeed committing - ISSUE_STAGE
     output logic [CVA6Cfg.NrCommitPorts-1:0] commit_ack_o,
     // AZK: thd id of the commited instructions
-    output logic [CVA6Cfg.NrCommitPorts-1:0] commit_thd_id_o,
+    output logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] commit_thd_id_o,
     // Acknowledge that we are indeed committing - CSR_REGFILE
     output logic [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack_o,
     // Register file write address - ISSUE_STAGE
@@ -65,7 +65,7 @@ module commit_stage
     // Write the fflags CSR - CSR_REGFILE
     output logic csr_write_fflags_o,
     // Exception or interrupt occurred in CSR stage (the same as commit) - CSR_REGFILE
-    input exception_t [NUM_THREADS-1:0] csr_exception_i,
+    input exception_t [CVA6Cfg.NUM_THREADS-1:0] csr_exception_i,
     // Commit the pending store - EX_STAGE
     output logic commit_lsu_o,
     // Commit buffer of LSU is ready - EX_STAGE

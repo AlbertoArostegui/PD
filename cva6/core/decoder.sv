@@ -31,8 +31,8 @@ module decoder
     parameter interrupts_t INTERRUPTS = '0
 ) (
     // Debug (async) request - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] debug_req_i,
-    input logic [NUM_THREADS_LOG-1:0] thread_id_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] debug_req_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
     // PC from fetch stage - FRONTEND
     input logic [CVA6Cfg.VLEN-1:0] pc_i,
     // Is a compressed instruction - compressed_decoder
@@ -58,15 +58,15 @@ module decoder
     // If an exception occured in fetch stage - FRONTEND
     input exception_t ex_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
-    input logic [NUM_THREADS-1:0] [1:0] irq_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] [1:0] irq_i,
     // Interrupt control status - CSR_REGFILE
     input irq_ctrl_t irq_ctrl_i,
     // Current privilege level - CSR_REGFILE
-    input riscv::priv_lvl_t [NUM_THREADS-1:0] priv_lvl_i,
+    input riscv::priv_lvl_t [CVA6Cfg.NUM_THREADS-1:0] priv_lvl_i,
     // Current virtualization mode - CSR_REGFILE
     input logic v_i,
     // Is debug mode - CSR_REGFILE
-    input logic [NUM_THREADS-1:0] debug_mode_i,
+    input logic [CVA6Cfg.NUM_THREADS-1:0] debug_mode_i,
     // Floating point extension status - CSR_REGFILE
     input riscv::xs_t fs_i,
     // Virtual floating point extension status - CSR_REGFILE
