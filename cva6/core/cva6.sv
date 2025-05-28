@@ -146,6 +146,7 @@ module cva6
       logic [CVA6Cfg.VLEN-1:0]    pc;              // PC of predict or mis-predict
       logic [CVA6Cfg.VLEN-1:0]    target_address;  // target address at which to jump, or not
       logic                       is_mispredict;   // set if this was a mis-predict
+      logic                       thread_id;       // Thread ID AZK
       logic                       is_taken;        // branch is taken
       cf_t                        cf_type;         // Type of control flow change
     },

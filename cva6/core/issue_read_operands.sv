@@ -185,6 +185,7 @@ module issue_read_operands
 
 
   logic [CVA6Cfg.NR_SB_ENTRIES-1:0][ariane_pkg::REG_ADDR_SIZE-1:0] rd_list;
+  logic [CVA6Cfg.NR_SB_ENTRIES-1:0][ariane_pkg::NUM_THREADS_LOG-1:0] sbe_thread_id;
   logic [CVA6Cfg.NR_SB_ENTRIES-1:0]                                rd_fpr;
 
   //fwd logic
@@ -428,6 +429,7 @@ module issue_read_operands
   // ----------------------------------
   for (genvar i = 0; i < CVA6Cfg.NR_SB_ENTRIES; i++) begin
     assign rd_list[i] = fwd_i.sbe[i].rd;
+    assign sbe_thread_id[i] = fwd_i.sbe[i].thread_id;
     assign rd_fpr[i]  = CVA6Cfg.FpPresent && ariane_pkg::is_rd_fpr(fwd_i.sbe[i].op);
   end
 
@@ -444,7 +446,7 @@ module issue_read_operands
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
         .issue_pointer_i(fwd_i.issue_pointer),
-        .thread_ids_i(fwd_i.sbe.thread_id),
+        .thread_ids_i(sbe_thread_id),
         .idx_o(idx_hzd_rs1[i]),
         .valid_o(rs1_raw_check[i])
     );
@@ -462,7 +464,7 @@ module issue_read_operands
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
         .issue_pointer_i(fwd_i.issue_pointer),
-        .thread_ids_i(fwd_i.sbe.thread_id),
+        .thread_ids_i(sbe_thread_id),
         .idx_o(idx_hzd_rs2[i]),
         .valid_o(rs2_raw_check[i])
     );
@@ -480,7 +482,7 @@ module issue_read_operands
         .rd_fpr_i(rd_fpr),
         .still_issued_i(fwd_i.still_issued),
         .issue_pointer_i(fwd_i.issue_pointer),
-        .thread_ids_i(fwd_i.sbe.thread_id),
+        .thread_ids_i(sbe_thread_id),
         .idx_o(idx_hzd_rs3[i]),
         .valid_o(rs3_raw_check[i])
     );
