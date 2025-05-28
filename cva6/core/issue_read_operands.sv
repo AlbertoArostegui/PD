@@ -857,16 +857,16 @@ module issue_read_operands
 
   end
 
-  for (genvar i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin : gen_write_back_port
-    automatic logic [CVA6Cfg.NUM_THREADS_LOG-1:0] t;
-    assign t = wb_th_id_i[i]; // AZK: we set the address depending on the selector bit of which TH_ID is the WB
-    assign waddr_pack[t][i] = waddr_i[i];
-    assign wdata_pack[t][i] = wdata_i[i];
-    assign we_pack[t][i]    = we_gpr_i[i];
-    assign waddr_pack[~t][i] = waddr_i[i];
-    assign wdata_pack[~t][i] = wdata_i[i];
-    assign we_pack[~t][i]    = 0;
-  end
+always_comb begin
+    waddr_pack[0][0] = '0;
+    wdata_pack[0][0] = '0;
+    we_pack[0][0] = '0;
+    for (i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
+        waddr_pack[wb_th_id_i[i]][i] = waddr_i[i];
+        wdawb_th_id_i[i]a_pack[t][i] = wdata_i[i];
+        we_pack[wb_th_id_i[i]][i]    = we_gpr_i[i];
+    end
+end
   if (CVA6Cfg.FpgaEn) begin : gen_fpga_regfile
     ariane_regfile_fpga #(
         .CVA6Cfg      (CVA6Cfg),
