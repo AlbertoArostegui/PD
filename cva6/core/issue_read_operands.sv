@@ -185,7 +185,7 @@ module issue_read_operands
 
 
   logic [CVA6Cfg.NR_SB_ENTRIES-1:0][ariane_pkg::REG_ADDR_SIZE-1:0] rd_list;
-  logic [CVA6Cfg.NR_SB_ENTRIES-1:0][ariane_pkg::NUM_THREADS_LOG-1:0] sbe_thread_id;
+  logic [CVA6Cfg.NR_SB_ENTRIES-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] sbe_thread_id;
   logic [CVA6Cfg.NR_SB_ENTRIES-1:0]                                rd_fpr;
 
   //fwd logic
@@ -861,9 +861,9 @@ always_comb begin
     waddr_pack[0][0] = '0;
     wdata_pack[0][0] = '0;
     we_pack[0][0] = '0;
-    for (i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
+    for (int i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
         waddr_pack[wb_th_id_i[i]][i] = waddr_i[i];
-        wdawb_th_id_i[i]a_pack[t][i] = wdata_i[i];
+        wdata_pack[wb_th_id_i[i]][i] = wdata_i[i];
         we_pack[wb_th_id_i[i]][i]    = we_gpr_i[i];
     end
 end

@@ -19,8 +19,8 @@ package cva6_config_pkg;
   localparam CVA6ConfigDataUserWidth = 32;  // axi_pkg.sv
 
   localparam config_pkg::cva6_user_cfg_t cva6_cfg = '{
-      NUM_THREADS: unsigned'(2),
-      NUM_THREADS_LOG: 1, // log2(NUM_THREADS)
+      NUM_THREADS: unsigned'(1),
+      NUM_THREADS_LOG: 0, // log2(NUM_THREADS)
       XLEN: unsigned'(CVA6ConfigXlen),
       VLEN: unsigned'(32),
       FpgaEn: bit'(0),
@@ -91,7 +91,7 @@ package cva6_config_pkg;
       IcacheByteSize: unsigned'(2048),
       IcacheSetAssoc: unsigned'(2),
       IcacheLineWidth: unsigned'(128),
-      DCacheType: config_pkg::HPDCACHE_WT,
+      DCacheType: config_pkg::WT,
       DcacheByteSize: unsigned'(2028),
       DcacheSetAssoc: unsigned'(2),
       DcacheLineWidth: unsigned'(128),

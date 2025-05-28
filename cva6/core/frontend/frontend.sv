@@ -44,7 +44,7 @@ module frontend
     // Exception event - COMMIT
     input logic ex_valid_i,
     // Mispredict event and next PC - EXECUTE
-    input bp_resolve_t [CVA6Cfg.NUM_THREADS-1:0] resolved_branch_i, //dup. Alberto: WHY? It comes from execute, shouldn't be duped
+    input bp_resolve_t resolved_branch_i,
     // Return from exception event - CSR
     input logic eret_i,
     // Next PC when returning from exception - CSR
@@ -414,64 +414,42 @@ module frontend
 
 
     // Alberto: MUX the thread IDs and the commit ports
-    logic [CVA6Cfg.VLEN-1:0] fetch_th0, fetch_th1;
-    assign icache_dreq_o.vaddr = current_thread_q ? fetch_th1 : fetch_th0;
+    logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] fetch_address;
+    assign icache_dreq_o.vaddr = fetch_address[current_thread_q];
 
-    next_pc #(
-      .CVA6Cfg(CVA6Cfg)
-    ) i_next_pc_thread0 (
-        .clk_i,
-        .rst_ni,
-        .npc_rst_load_i(npc_rst_load_q),
-        .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
-        // From this thread
-        .bp_valid_i(bp_valid & (current_thread_q == 0)),
-        .if_ready_i(if_ready & (current_thread_q == 0)),
-        .replay_i(replay & (current_thread_q == 0)),
-        .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == 0)),
-        // From commit
-        .eret_i(eret_i & (commit_thread_id_i[0] == 0)),
-        .ex_valid_i(ex_valid_i & (commit_thread_id_i[0] == 0)),
-        .set_pc_commit_i(set_pc_commit_i & (commit_thread_id_i[0] == 0)),
-        .set_debug_pc_i(set_debug_pc_i[0]),
-        .halt_i(halt_i),
+    generate
+        for (genvar i = 0; i < CVA6Cfg.NUM_THREADS; i++) begin : gen_next_pc
+            next_pc #(
+            .CVA6Cfg(CVA6Cfg)
+            ) i_next_pc_thread (
+                .clk_i,
+                .rst_ni,
+                .npc_rst_load_i(npc_rst_load_q),
+                .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
+                // From this thread
+                .bp_valid_i(bp_valid & (current_thread_q == i)),
+                .if_ready_i(if_ready & (current_thread_q == i)),
+                .replay_i(replay & (current_thread_q == i)),
+                .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == i)),
+                // From commit
+                .eret_i(eret_i & (commit_thread_id_i[0] == i)),
+                .ex_valid_i(ex_valid_i & (commit_thread_id_i[0] == i)),
+                .set_pc_commit_i(set_pc_commit_i & (commit_thread_id_i[0] == i)),
+                .set_debug_pc_i(set_debug_pc_i[i]),
+                .halt_i(halt_i),
 
-        .predict_address_i(predict_address),
-        .replay_addr_i(replay_addr),
-        .eret_pc_i(epc_i),
-        .trap_vector_base_i,
-        .target_address_mispredict_i(resolved_branch_i.target_address),
-        .pc_commit_i(pc_commit_i[0]),
+                .predict_address_i(predict_address),
+                .replay_addr_i(replay_addr),
+                .eret_pc_i(epc_i),
+                .trap_vector_base_i,
+                .target_address_mispredict_i(resolved_branch_i.target_address),
+                .pc_commit_i(pc_commit_i[i]),
 
-        .pc_o(fetch_th0)
-    );
+                .pc_o(fetch_address[i])
+            );
+        end : gen_next_pc
+    endgenerate
 
-    next_pc #(
-      .CVA6Cfg(CVA6Cfg)
-    ) i_next_pc_thread1 (
-        .clk_i,
-        .rst_ni,
-        .npc_rst_load_i(npc_rst_load_q),
-        .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
-        .bp_valid_i(bp_valid & (current_thread_q == 1)),
-        .if_ready_i(if_ready & (current_thread_q == 1)),
-        .replay_i(replay & (current_thread_q == 1)),
-        .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == 1)),
-        .eret_i(eret_i & (commit_thread_id_i[0] == 1)),
-        .ex_valid_i(ex_valid_i & (commit_thread_id_i[0] == 1)),
-        .set_pc_commit_i(set_pc_commit_i & (commit_thread_id_i[0] == 1)),
-        .set_debug_pc_i(set_debug_pc_i[1]),
-        .halt_i(halt_i  /* & thread that halts*/),
-
-        .predict_address_i(predict_address),
-        .replay_addr_i(replay_addr),
-        .eret_pc_i(epc_i),
-        .trap_vector_base_i,
-        .target_address_mispredict_i(resolved_branch_i.target_address),
-        .pc_commit_i(pc_commit_i[1]),
-
-        .pc_o(fetch_th1)
-    );
 
   logic [CVA6Cfg.FETCH_WIDTH-1:0] icache_data;
   // re-align the cache line

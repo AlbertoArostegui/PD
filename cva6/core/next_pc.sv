@@ -92,8 +92,8 @@ module next_pc #(
 
     end : npc
 
-    always_ff @(posedge clk_i) begin
-        if (rst_ni)
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (~rst_ni)
             pc_q <= boot_addr_i;
         else if (pc_write_en)
             pc_q <= pc_d;
