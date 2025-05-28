@@ -1,5 +1,4 @@
-module next_pc
-#(
+module next_pc #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty
 ) (
     input clk_i,
@@ -21,8 +20,8 @@ module next_pc
     input [CVA6Cfg.VLEN-1:0] predict_address_i,
     input [CVA6Cfg.VLEN-1:0] replay_addr_i,
     input [CVA6Cfg.VLEN-1:0] eret_pc_i,
-    input [CVA6cfg.VLEN-1:0] trap_vector_base_i,
-    input [CVA6cfg.VLEN-1:0] target_address_mispredict_i,
+    input [CVA6Cfg.VLEN-1:0] trap_vector_base_i,
+    input [CVA6Cfg.VLEN-1:0] target_address_mispredict_i,
     input [CVA6Cfg.VLEN-1:0] pc_commit_i,
 
     //input [CVA6Cfg.VLEN-1:0] pc_commit0_i,
@@ -55,7 +54,7 @@ module next_pc
         pc_d = pc_q;
 
 
-        if (npc_rst_load) begin
+        if (npc_rst_load_i) begin
           fetch_address = boot_addr_i;
           pc_d = boot_addr_i;
         end else begin

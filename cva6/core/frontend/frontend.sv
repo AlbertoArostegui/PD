@@ -354,13 +354,13 @@ module frontend
 
   // thread stalling on icache miss
   // Track single outstanding icache miss
-  logic icache_stall_kpending_d, icache_stall_pending_q;
+  logic icache_stall_pending_d, icache_stall_pending_q;
   logic [CVA6Cfg.NUM_THREADS_LOG-1:0] stalled_thread_id_d, stalled_thread_id_q;
 
   // drive thread_context status updates
   logic status_update_req_comb;
   logic status_update_thread_id_comb;
-  thread_status_t status_udpate_val_comb;
+  thread_status_t status_update_val_comb;
 
     // Alberto: thread selection logic
     thread_status_t [CVA6Cfg.NUM_THREADS-1:0] thread_statuses; // Logic only for 2 threads
@@ -374,6 +374,8 @@ module frontend
     end
 
     always_comb begin : thread_status_update_logic
+      logic cache_accepting_req;
+      logic current_thread_is_ready;
       status_update_req_comb = 1'b0;
       status_update_thread_id_comb = 'x;
       status_update_val_comb = READY;
@@ -396,7 +398,7 @@ module frontend
       if (icache_stall_pending_q && icache_dreq_i.ready) begin
         if (thread_statuses[stalled_thread_id_q] == STALLED_ICACHE) begin
           if (icache_dreq_i.ex.valid)
-            status_udpate_req_comb = 1'b0;
+            status_update_req_comb = 1'b0;
           else begin
             status_update_req_comb = 1'b1;
             status_update_val_comb = READY;
@@ -416,6 +418,7 @@ module frontend
     assign icache_dreq_o.vaddr = current_thread_q ? fetch_th1 : fetch_th0;
 
     next_pc #(
+      .CVA6Cfg(CVA6Cfg)
     ) i_next_pc_thread0 (
         .clk_i,
         .rst_ni,
@@ -435,7 +438,7 @@ module frontend
 
         .predict_address_i(predict_address),
         .replay_addr_i(replay_addr),
-        .eret_pc_i(eret_pc_i),
+        .eret_pc_i(epc_i),
         .trap_vector_base_i,
         .target_address_mispredict_i(resolved_branch_i.target_address),
         .pc_commit_i(pc_commit_i[0]),
@@ -444,6 +447,7 @@ module frontend
     );
 
     next_pc #(
+      .CVA6Cfg(CVA6Cfg)
     ) i_next_pc_thread1 (
         .clk_i,
         .rst_ni,
@@ -461,7 +465,7 @@ module frontend
 
         .predict_address_i(predict_address),
         .replay_addr_i(replay_addr),
-        .eret_pc_i(eret_pc_i),
+        .eret_pc_i(epc_i),
         .trap_vector_base_i,
         .target_address_mispredict_i(resolved_branch_i.target_address),
         .pc_commit_i(pc_commit_i[1]),
