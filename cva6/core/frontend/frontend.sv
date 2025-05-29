@@ -262,7 +262,7 @@ module frontend
           // make sure to only alter the RAS if we actually consumed the instruction
           ras_pop = ras_predict.valid & instr_queue_consumed[i];
           ras_push = 1'b0;
-          predict_address = ras_predict.ra;
+          predict_address = ras_predict_all[current_thread_q].ra;
           cf_type[i] = ariane_pkg::Return;
         end
         // branch prediction
@@ -364,7 +364,7 @@ module frontend
 
     // Alberto: thread selection logic
     thread_status_t [CVA6Cfg.NUM_THREADS-1:0] thread_statuses; // Logic only for 2 threads
-    logic current_thread_d, current_thread_q;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] current_thread_d, current_thread_q;
 
     always_comb begin : thread_selection
       current_thread_d = current_thread_q;
@@ -524,8 +524,8 @@ module frontend
           .clk_i,
           .rst_ni,
           .flush_bp_i(flush_bp_i),
-          .push_i(ras_push && (current_thread_id_q == thread_id)),
-          .pop_i(ras_pop && (current_thread_id_q == thread_id)),
+          .push_i(ras_push && (current_thread_q == thread_id)),
+          .pop_i(ras_pop && (current_thread_q == thread_id)),
           .data_i(ras_update),
           .data_o(ras_predict_all[thread_id])
       );
