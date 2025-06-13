@@ -65,27 +65,35 @@ module next_pc #(
         if (bp_valid_i) begin
             pc_write_en = 1'b1;
             fetch_address = predict_address_i;
-        end else if (if_ready_i) begin
+            pc_d = predict_address_i;
+        end 
+        if (if_ready_i) begin
             pc_write_en = 1'b1;
             pc_d = {
               fetch_address[CVA6Cfg.VLEN-1:CVA6Cfg.FETCH_ALIGN_BITS] + 1, {CVA6Cfg.FETCH_ALIGN_BITS{1'b0}}
             };
-        end else if (replay_i) begin
+        end
+        if (replay_i) begin
             pc_write_en = 1'b1;
             pc_d = replay_addr_i;
-        end else if (mispredict_i) begin
+        end
+        if (mispredict_i) begin
             pc_write_en = 1'b1;
             pc_d = target_address_mispredict_i;
-        end else if (eret_i) begin
+        end
+        if (eret_i) begin
             pc_write_en = 1'b1;
             pc_d = eret_pc_i;
-        end else if (ex_valid_i) begin
+        end
+        if (ex_valid_i) begin
             pc_write_en = 1'b1;
             pc_d = trap_vector_base_i;
-        end else if (set_pc_commit_i) begin
+        end
+        if (set_pc_commit_i) begin
             pc_write_en = 1'b1;
             pc_d = pc_commit_i + (halt_i ? '0 : {{CVA6Cfg.VLEN - 3{1'b0}}, 3'b100});
-        end else if (set_debug_pc_i) begin
+        end
+        if (set_debug_pc_i) begin
             pc_write_en = 1'b1;
             pc_d = CVA6Cfg.DmBaseAddress[CVA6Cfg.VLEN-1:0] + CVA6Cfg.HaltAddress[CVA6Cfg.VLEN-1:0];
         end

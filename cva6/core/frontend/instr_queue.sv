@@ -76,6 +76,8 @@ module instr_queue
     input logic [CVA6Cfg.VLEN-1:0] predict_address_i,
     // Instruction predict address - FRONTEND
     input ariane_pkg::cf_t [CVA6Cfg.INSTR_PER_FETCH-1:0] cf_type_i,
+
+    input [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
     // Replay instruction because one of the FIFO was  full - FRONTEND
     output logic replay_o,
     // Address at which to replay the fetch - FRONTEND
@@ -99,6 +101,7 @@ module instr_queue
     logic [CVA6Cfg.GPLEN-1:0]        ex_gpaddr;  // lower GPLEN bits of tval2 for exception
     logic [31:0]                     ex_tinst;   // tinst of exception
     logic                            ex_gva;
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id;
   } instr_data_t;
 
   logic [CVA6Cfg.LOG2_INSTR_PER_FETCH-1:0] branch_index;
@@ -254,6 +257,7 @@ module instr_queue
     assign instr_data_in[0].cf = cf_type_i[0];
     assign instr_data_in[0].ex = exception_i;  // exceptions hold for the whole fetch packet
     assign instr_data_in[0].ex_vaddr = exception_addr_i;
+    assign instr_data_in[0].thread_id = thread_id_i;
     if (CVA6Cfg.RVH) begin : gen_hyp_ex_without_C
       assign instr_data_in[0].ex_gpaddr = exception_gpaddr_i;
       assign instr_data_in[0].ex_tinst = exception_tinst_i;
@@ -385,12 +389,13 @@ module instr_queue
         end
       end
     end
-  end else begin : gen_downstream_itf_without_c
-    always_comb begin
+  end else begin : gen_downstream_itf_without_c //ALBERTO: here for now, no compressed.
+   always_comb begin
       idx_ds_d = '0;
       idx_is_d = '0;
       fetch_entry_o[0].instruction = instr_data_out[0].instr;
       fetch_entry_o[0].address = pc_q;
+      fetch_entry_o[0].thread_id = instr_data_out[0].thread_id;
 
       fetch_entry_o[0].ex.valid = instr_data_out[0].ex != ariane_pkg::FE_NONE;
       if (instr_data_out[0].ex == ariane_pkg::FE_INSTR_ACCESS_FAULT) begin

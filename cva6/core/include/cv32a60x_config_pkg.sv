@@ -20,7 +20,7 @@ package cva6_config_pkg;
 
   localparam config_pkg::cva6_user_cfg_t cva6_cfg = '{
       NUM_THREADS: unsigned'(1),
-      NUM_THREADS_LOG: 0, // log2(NUM_THREADS)
+      NUM_THREADS_LOG: unsigned'(1), // log2(NUM_THREADS)
       XLEN: unsigned'(CVA6ConfigXlen),
       VLEN: unsigned'(32),
       FpgaEn: bit'(0),
@@ -43,13 +43,13 @@ package cva6_config_pkg;
       RVB: bit'(1),
       ZKN: bit'(0),
       RVV: bit'(0),
-      RVC: bit'(1),
+      RVC: bit'(0),
       RVH: bit'(0),
       RVZCMT: bit'(0),
       RVZCB: bit'(1),
       RVZCMP: bit'(0),
       XFVec: bit'(0),
-      CvxifEn: bit'(1),
+      CvxifEn: bit'(0),
       CoproType: config_pkg::COPRO_EXAMPLE,
       RVZiCond: bit'(0),
       RVZicntr: bit'(0),

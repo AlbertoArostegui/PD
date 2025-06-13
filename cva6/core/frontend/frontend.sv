@@ -312,7 +312,7 @@ module frontend
 
 
   // Cache interface
-  assign icache_dreq_o.req = instr_queue_ready && !icache_stall_pending_q;
+  assign icache_dreq_o.req = instr_queue_ready /*&& !icache_stall_pending_q*/;
   assign if_ready = icache_dreq_i.ready & instr_queue_ready;
   // We need to flush the cache pipeline if:
   // 1. We mispredicted
@@ -368,14 +368,18 @@ module frontend
 
     always_comb begin : thread_selection
       current_thread_d = current_thread_q;
-      if (thread_statuses[!current_thread_q] == READY &&
-          !replay /*We do not want to starve 1 thread. No switch if instrQ is not rdy*/)
+      /*if (thread_statuses[!current_thread_q] == READY &&
+          !replay)*/
+      if (if_ready)
         current_thread_d = !current_thread_q;
     end
 
+    /*Rigth now we only change on icache miss
+    * We should look into stalling o dcache load miss*/
     always_comb begin : thread_status_update_logic
       logic cache_accepting_req;
       logic current_thread_is_ready;
+
       status_update_req_comb = 1'b0;
       status_update_thread_id_comb = 'x;
       status_update_val_comb = READY;
@@ -471,9 +475,12 @@ module frontend
       icache_stall_pending_q <= '0;
       stalled_thread_id_q <= '0;
       current_thread_q <= 0;
+      for (int i = 0; i < CVA6Cfg.NUM_THREADS-1; i++)
+        thread_statuses[i] <= READY;
 
     end else begin
-      current_thread_q <= current_thread_d;
+      //current_thread_q <= current_thread_d;
+      current_thread_q <= 0;
       speculative_q  <= speculative_d;
       icache_valid_q <= icache_dreq_i.valid;
       thread_statuses[status_update_thread_id_comb] <= status_update_val_comb;
@@ -630,6 +637,7 @@ module frontend
       .exception_gva_i    (icache_gva_q),
       .predict_address_i  (predict_address),
       .cf_type_i          (cf_type),
+      .thread_id_i        (current_thread_q),
       .valid_i            (instruction_valid),     // from re-aligner
       .consumed_o         (instr_queue_consumed),
       .ready_o            (instr_queue_ready),

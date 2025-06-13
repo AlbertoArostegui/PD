@@ -1320,7 +1320,8 @@ endgenerate
       // virtualization mode
       .v_i                   (v),
       // flush ports
-      .set_pc_commit_o       (/*setrap_vector_base_it_pc_ctrl_pcgen*/),
+      //.set_pc_commit_o       (/*setrap_vector_base_it_pc_ctrl_pcgen*/),
+      .set_pc_commit_o       (set_pc_ctrl_pcgen),
       .flush_if_o            (flush_ctrl_if),
       .flush_unissued_instr_o(flush_unissued_instr_ctrl_id),
       .flush_id_o            (flush_ctrl_id),
@@ -1413,8 +1414,8 @@ endgenerate
         .clk_i             (clk_i),
         .rst_ni            (rst_ni),
         // I$
-        //.icache_en_i       (icache_en_csr),
-        .icache_en_i       ('0),
+        .icache_en_i       (icache_en_csr), // ALBERTO
+        //.icache_en_i       ('0),
         .icache_flush_i    (icache_flush_ctrl_cache),
         .icache_miss_o     (icache_miss_cache_perf),
         .icache_areq_i     (icache_areq_ex_cache),
