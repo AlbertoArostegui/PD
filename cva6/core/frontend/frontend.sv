@@ -34,7 +34,8 @@ module frontend
     // Flush branch prediction - zero
     input logic flush_bp_i,
     // Flush requested by FENCE, mis-predict and exception - CONTROLLER
-    input logic [CVA6Cfg.NUM_THREADS-1:0] flush_i, // dup
+    input logic flush_i, // dup
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flush_thread_id_i,
     // Halt requested by WFI and Accelerate port - CONTROLLER
     input logic [CVA6Cfg.NUM_THREADS-1:0] halt_i, //dup
     // Set COMMIT PC as next PC requested by FENCE, CSR side-effect and Accelerate port - CONTROLLER
@@ -370,8 +371,9 @@ module frontend
       current_thread_d = current_thread_q;
       /*if (thread_statuses[!current_thread_q] == READY &&
           !replay)*/
-      if (if_ready)
+      if (fetch_entry_valid_o)
         current_thread_d = !current_thread_q;
+
     end
 
     /*Rigth now we only change on icache miss
@@ -418,8 +420,9 @@ module frontend
 
 
     // Alberto: MUX the thread IDs and the commit ports
-    logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] fetch_address;
-    assign icache_dreq_o.vaddr = fetch_address[current_thread_q];
+    logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] fetch_addresses;
+    logic [CVA6Cfg.VLEN-1:0] fetch_address = fetch_addresses[current_thread_q];
+    assign icache_dreq_o.vaddr = fetch_address;
 
     generate
         for (genvar i = 0; i < CVA6Cfg.NUM_THREADS; i++) begin : gen_next_pc
@@ -449,7 +452,7 @@ module frontend
                 .target_address_mispredict_i(resolved_branch_i.target_address),
                 .pc_commit_i(pc_commit_i[i]),
 
-                .pc_o(fetch_address[i])
+                .pc_o(fetch_addresses[i])
             );
         end : gen_next_pc
     endgenerate
@@ -479,8 +482,8 @@ module frontend
         thread_statuses[i] <= READY;
 
     end else begin
-      //current_thread_q <= current_thread_d;
-      current_thread_q <= 0;
+      current_thread_q <= current_thread_d;
+      //current_thread_q <= 0;
       speculative_q  <= speculative_d;
       icache_valid_q <= icache_dreq_i.valid;
       thread_statuses[status_update_thread_id_comb] <= status_update_val_comb;
@@ -628,8 +631,10 @@ module frontend
       .clk_i              (clk_i),
       .rst_ni             (rst_ni),
       .flush_i            (flush_i),
+      .flush_thread_id_i  (flush_thread_id_i),
       .instr_i            (instr),                 // from re-aligner
-      .addr_i             (addr),                  // from re-aligner
+      .addr_i             (addr),         // from re-aligner
+      .fetch_address_i    (icache_vaddr_q),
       .exception_i        (icache_ex_valid_q),     // from I$
       .exception_addr_i   (icache_vaddr_q),
       .exception_gpaddr_i (icache_gpaddr_q),

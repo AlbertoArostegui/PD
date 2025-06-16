@@ -146,6 +146,8 @@ module issue_stage
     input logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_i,
     // GPR write enable - COMMIT_STAGE
     input logic [CVA6Cfg.NrCommitPorts-1:0] we_gpr_i,
+
+    input logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] wb_thread_id_i,
     // FPR write enable - COMMIT_STAGE
     input logic [CVA6Cfg.NrCommitPorts-1:0] we_fpr_i,
     // Instructions to commit - COMMIT_STAGE
@@ -298,7 +300,7 @@ module issue_stage
       .wdata_i,
       .we_gpr_i,
       .we_fpr_i,
-      .wb_th_id_i(0), // TODO
+      .wb_th_id_i(wb_thread_id_i), // TODO
       .stall_issue_o,
       .rvfi_rs1_o              (rvfi_rs1_o),
       .rvfi_rs2_o              (rvfi_rs2_o)

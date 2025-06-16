@@ -55,10 +55,12 @@ module instr_queue
     input logic rst_ni,
     // Fetch flush request - CONTROLLER
     input logic flush_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flush_thread_id_i,
     // Instruction - instr_realign
     input logic [CVA6Cfg.INSTR_PER_FETCH-1:0][31:0] instr_i,
     // Instruction address - instr_realign
     input logic [CVA6Cfg.INSTR_PER_FETCH-1:0][CVA6Cfg.VLEN-1:0] addr_i,
+   input logic [CVA6Cfg.VLEN-1:0] fetch_address_i,
     // Instruction is valid - instr_realign
     input logic [CVA6Cfg.INSTR_PER_FETCH-1:0] valid_i,
     // Handshake’s ready with CACHE - CACHE
@@ -156,6 +158,7 @@ module instr_queue
     for (genvar i = 0; i < CVA6Cfg.INSTR_PER_FETCH; i++) begin : gen_unpack_taken
       assign taken[i] = cf_type_i[i] != ariane_pkg::NoCF;
     end
+
 
     // calculate a branch mask, e.g.: get the first taken branch
     lzc #(
@@ -434,11 +437,15 @@ module instr_queue
   // Calculate (Next) PC
   // ----------------------
   assign pc_j[0] = pc_q;
+  assign pc_j[1] = fetch_address_i;
+    // ALBERTO: No compressed and only one Issue Port in our implementation
+    /*
   for (genvar i = 0; i < CVA6Cfg.NrIssuePorts; i++) begin
     assign pc_j[i+1] = fetch_entry_is_cf[i] ? address_out : (
       pc_j[i] + ((fetch_entry_o[i].instruction[1:0] != 2'b11) ? 'd2 : 'd4)
     );
   end
+     */
 
   always_comb begin
     pc_d = pc_q;

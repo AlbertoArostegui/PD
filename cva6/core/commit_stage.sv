@@ -164,7 +164,7 @@ module commit_stage
         // However we can drop it (with its exception)
         if (commit_drop_i[0]) begin
           commit_ack_o[0] = 1'b1;
-	  commit_thd_id_o[0] = commit_instr_i[0].thread_id;
+          commit_thd_id_o[0] = commit_instr_i[0].thread_id;
         end
       end else begin
         commit_ack_o[0] = 1'b1;
