@@ -1,5 +1,6 @@
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
+
 // License, Version 0.51 (the "License"); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
 // http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
@@ -29,6 +30,7 @@ module controller
     output logic set_pc_commit_o,
     // Flush the IF stage - FRONTEND
     output logic flush_if_o,
+    output logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flush_if_thread_id_o,
     // Flush un-issued instructions of the scoreboard - FRONTEND
     output logic flush_unissued_instr_o,
     // Flush ID stage - ID_STAGE

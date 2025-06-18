@@ -332,7 +332,7 @@ module cva6
     // Asynchronous reset active low - SUBSYSTEM
     input logic rst_ni,
     // Reset boot address - SUBSYSTEM
-    input logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.VLEN-1:0] boot_addr_i,
+    input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] [CVA6Cfg.VLEN-1:0] boot_addr_i,
     // Hard ID reflected as CSR - SUBSYSTEM
     input logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.XLEN-1:0] hart_id_i,
     // Level sensitive (async) interrupts - SUBSYSTEM
@@ -634,6 +634,7 @@ module cva6
   logic flush_csr_ctrl;
   logic flush_unissued_instr_ctrl_id;
   logic flush_ctrl_if;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flush_ctrl_if_thread_id;
   logic flush_ctrl_id;
   logic flush_ctrl_ex;
   logic flush_ctrl_bp;
@@ -701,6 +702,7 @@ module cva6
       .boot_addr_i        (boot_addr_i[CVA6Cfg.VLEN-1:0]),
       .flush_bp_i         (1'b0),
       .flush_i            (flush_ctrl_if),                  // not entirely correct
+      .flush_thread_id_i  (flush_ctrl_if_thread_id),
       .halt_i             (halt_ctrl),
       .set_pc_commit_i    (set_pc_ctrl_pcgen),
       .pc_commit_i        (pc_commit),
@@ -934,7 +936,7 @@ module cva6
       .wt_valid_i              (wt_valid_ex_id),
       .x_we_i                  (x_we_ex_id),
       .x_rd_i                  (x_rd_ex_id),
-
+      .wb_thread_id_i       (commit_thd_id),
       .waddr_i              (waddr_commit_id),
       .wdata_i              (wdata_commit_id),
       .we_gpr_i             (we_gpr_commit_id),
@@ -1323,6 +1325,7 @@ endgenerate
       //.set_pc_commit_o       (/*setrap_vector_base_it_pc_ctrl_pcgen*/),
       .set_pc_commit_o       (set_pc_ctrl_pcgen),
       .flush_if_o            (flush_ctrl_if),
+      .flush_if_thread_id_o  (flush_ctrl_if_thread_id),
       .flush_unissued_instr_o(flush_unissued_instr_ctrl_id),
       .flush_id_o            (flush_ctrl_id),
       .flush_ex_o            (flush_ctrl_ex),

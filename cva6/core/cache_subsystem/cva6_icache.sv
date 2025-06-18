@@ -117,6 +117,7 @@ module cva6_icache
   logic [CVA6Cfg.ICACHE_SET_ASSOC-1:0] vld_wdata;  // valid bits to write
   logic [CVA6Cfg.ICACHE_SET_ASSOC-1:0] vld_rdata;  // valid bits coming from valid regs
   logic [ICACHE_CL_IDX_WIDTH-1:0] vld_addr;  // valid bit
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_d, thread_id_q;
 
   // cpmtroller FSM
   typedef enum logic [2:0] {
@@ -128,6 +129,9 @@ module cva6_icache
     KILL_MISS
   } state_e;
   state_e state_d, state_q;
+
+  assign thread_id_d = (dreq_o.ready & dreq_i.req) ? dreq_i.thread_id : thread_id_q;
+  assign dreq_o.thread_id = thread_id_q;
 
   ///////////////////////////////////////////////////////
   // address -> cl_index mapping, interface plumbing
@@ -516,6 +520,7 @@ module cva6_icache
       cl_offset_q   <= '0;
       repl_way_oh_q <= '0;
       inv_q         <= '0;
+      thread_id_q   <= '0;
     end else begin
       cl_tag_q      <= cl_tag_d;
       flush_cnt_q   <= flush_cnt_d;
@@ -527,6 +532,7 @@ module cva6_icache
       cl_offset_q   <= cl_offset_d;
       repl_way_oh_q <= repl_way_oh_d;
       inv_q         <= inv_d;
+      thread_id_q   <= thread_id_d;
     end
   end
 

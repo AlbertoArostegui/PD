@@ -867,6 +867,7 @@ always_comb begin
         we_pack[wb_th_id_i[i]][i]    = we_gpr_i[i];
     end
 end
+
   if (CVA6Cfg.FpgaEn) begin : gen_fpga_regfile
     ariane_regfile_fpga #(
         .CVA6Cfg      (CVA6Cfg),

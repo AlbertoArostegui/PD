@@ -80,6 +80,8 @@ module instr_queue
     input ariane_pkg::cf_t [CVA6Cfg.INSTR_PER_FETCH-1:0] cf_type_i,
 
     input [CVA6Cfg.NUM_THREADS_LOG-1:0] thread_id_i,
+    output [CVA6Cfg.NUM_THREADS_LOG-1:0] popped_thread_id_o,
+
     // Replay instruction because one of the FIFO was  full - FRONTEND
     output logic replay_o,
     // Address at which to replay the fetch - FRONTEND
@@ -97,6 +99,7 @@ module instr_queue
 
   typedef struct packed {
     logic [31:0]                     instr;      // instruction word
+    logic [31:0]                     addr;
     ariane_pkg::cf_t                 cf;         // branch was taken
     ariane_pkg::frontend_exception_t ex;         // exception happened
     logic [CVA6Cfg.VLEN-1:0]         ex_vaddr;   // lower VLEN bits of tval for exception
@@ -150,6 +153,9 @@ module instr_queue
   ariane_pkg::cf_t [CVA6Cfg.INSTR_PER_FETCH*2-1:0] cf;
   // replay interface
   logic [CVA6Cfg.INSTR_PER_FETCH-1:0] instr_overflow_fifo;
+  logic [CVA6Cfg.NUM_THREADS_LOG-1:0] last_thread_q;
+
+  assign popped_thread_id_o = instr_data_out[0].thread_id;
 
   assign ready_o = ~(|instr_queue_full) & ~full_address;
 
@@ -261,6 +267,7 @@ module instr_queue
     assign instr_data_in[0].ex = exception_i;  // exceptions hold for the whole fetch packet
     assign instr_data_in[0].ex_vaddr = exception_addr_i;
     assign instr_data_in[0].thread_id = thread_id_i;
+    assign instr_data_in[0].addr = fetch_address_i;
     if (CVA6Cfg.RVH) begin : gen_hyp_ex_without_C
       assign instr_data_in[0].ex_gpaddr = exception_gpaddr_i;
       assign instr_data_in[0].ex_tinst = exception_tinst_i;
@@ -397,7 +404,7 @@ module instr_queue
       idx_ds_d = '0;
       idx_is_d = '0;
       fetch_entry_o[0].instruction = instr_data_out[0].instr;
-      fetch_entry_o[0].address = pc_q;
+      fetch_entry_o[0].address = instr_data_out[0].addr;
       fetch_entry_o[0].thread_id = instr_data_out[0].thread_id;
 
       fetch_entry_o[0].ex.valid = instr_data_out[0].ex != ariane_pkg::FE_NONE;
@@ -437,15 +444,15 @@ module instr_queue
   // Calculate (Next) PC
   // ----------------------
   assign pc_j[0] = pc_q;
-  assign pc_j[1] = fetch_address_i;
+  //assign pc_j[1] = fetch_address_i;
     // ALBERTO: No compressed and only one Issue Port in our implementation
-    /*
   for (genvar i = 0; i < CVA6Cfg.NrIssuePorts; i++) begin
+      /*
     assign pc_j[i+1] = fetch_entry_is_cf[i] ? address_out : (
       pc_j[i] + ((fetch_entry_o[i].instruction[1:0] != 2'b11) ? 'd2 : 'd4)
-    );
+    );*/
+      assign pc_j[i+1] = (thread_id_i == last_thread_q) ? pc_j[i] + 'd4 : fetch_address_i;
   end
-     */
 
   always_comb begin
     pc_d = pc_q;
@@ -552,11 +559,14 @@ module instr_queue
       if (!rst_ni) begin
         pc_q            <= '0;
         reset_address_q <= 1'b1;
+        last_thread_q   <= '0;
       end else begin
         pc_q            <= pc_d;
         reset_address_q <= reset_address_d;
+        last_thread_q   <= thread_id_i;
         if (flush_i) begin
           reset_address_q <= 1'b1;
+            //TODO: ALBERTO: We should look into which thread was the one flushed.
         end
       end
     end

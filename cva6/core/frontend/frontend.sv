@@ -323,6 +323,7 @@ module frontend
   // if we have a valid branch-prediction we need to only kill the last cache request
   // also if we killed the first stage we also need to kill the second stage (inclusive flush)
   assign icache_dreq_o.kill_s2 = icache_dreq_o.kill_s1 | bp_valid;
+  assign icache_dreq_o.thread_id = current_thread_q;
 
   // Update Control Flow Predictions
   bht_update_t bht_update;
@@ -422,6 +423,7 @@ module frontend
     // Alberto: MUX the thread IDs and the commit ports
     logic [CVA6Cfg.NUM_THREADS-1:0][CVA6Cfg.VLEN-1:0] fetch_addresses;
     logic [CVA6Cfg.VLEN-1:0] fetch_address = fetch_addresses[current_thread_q];
+    logic [CVA6Cfg.NUM_THREADS_LOG-1:0] popped_thread_id;
     assign icache_dreq_o.vaddr = fetch_address;
 
     generate
@@ -435,7 +437,7 @@ module frontend
                 .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
                 // From this thread
                 .bp_valid_i(bp_valid & (current_thread_q == i)),
-                .if_ready_i(if_ready & (current_thread_q == i)),
+                .if_ready_i(if_ready & (current_thread_q == i) & popped_thread_id == i),
                 .replay_i(replay & (current_thread_q == i)),
                 .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == i)),
                 // From commit
@@ -642,7 +644,8 @@ module frontend
       .exception_gva_i    (icache_gva_q),
       .predict_address_i  (predict_address),
       .cf_type_i          (cf_type),
-      .thread_id_i        (current_thread_q),
+      .thread_id_i        (icache_dreq_i.thread_id),
+      .popped_thread_id_o (popped_thread_id),
       .valid_i            (instruction_valid),     // from re-aligner
       .consumed_o         (instr_queue_consumed),
       .ready_o            (instr_queue_ready),
