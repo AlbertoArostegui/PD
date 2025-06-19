@@ -394,6 +394,9 @@ module cva6
   logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
   logic             [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack;
 
+  logic [NUM_THREADS-1:0] [31:0] boot_addr_hart1;
+  logic [NUM_THREADS-1:0] boot_hart1;
+
   localparam NumPorts = 4;
 
   // CVXIF
@@ -704,6 +707,8 @@ module cva6
       .flush_i            (flush_ctrl_if),                  // not entirely correct
       .flush_thread_id_i  (flush_ctrl_if_thread_id),
       .halt_i             (halt_ctrl),
+      .boot_addr_hart1_i  (boot_addr_hart1[0]),
+      .boot_hart1_i       (boot_hart1[0]),
       .set_pc_commit_i    (set_pc_ctrl_pcgen),
       .pc_commit_i        (pc_commit),
       .ex_valid_i         (ex_commit.valid),
@@ -1192,6 +1197,8 @@ generate
         .commit_instr_i          (commit_instr_id_commit[i^commit_instr_id_commit[0].thread_id]), // AZK: always feed the older id for the thread, toggle only ack DONE
         .commit_ack_i            (commit_ack[i]), // AZK: feed only th instructions back to back DONE
         .boot_addr_i             (boot_addr_i[i][CVA6Cfg.VLEN-1:0]), // DONE
+        .boot_addr_hart1_o       (boot_addr_hart1[i]),
+        .boot_hart1_o            (boot_hart1[i]),
         .hart_id_i               (hart_id_i[i][CVA6Cfg.XLEN-1:0]),   // DONE
         .ex_i                    (i == commit_instr_id_commit[0].thread_id ? ex_commit : '0), // AZK: only feed when this is the th DONE
         .csr_op_i                (i == commit_instr_id_commit[0].thread_id ? csr_op_commit_csr : ADD), // AZK: mux th input and other nop; DONE

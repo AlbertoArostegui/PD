@@ -36,6 +36,8 @@ module frontend
     // Flush requested by FENCE, mis-predict and exception - CONTROLLER
     input logic flush_i, // dup
     input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flush_thread_id_i,
+    input logic [31:0] boot_addr_hart1_i;
+    input logic boot_hart1_i;
     // Halt requested by WFI and Accelerate port - CONTROLLER
     input logic [CVA6Cfg.NUM_THREADS-1:0] halt_i, //dup
     // Set COMMIT PC as next PC requested by FENCE, CSR side-effect and Accelerate port - CONTROLLER

@@ -41,6 +41,9 @@ module csr_regfile
     input logic [CVA6Cfg.NrCommitPorts-1:0] commit_ack_i,
     // Address from which to start booting, mtvec is set to the same address - SUBSYSTEM
     input logic [CVA6Cfg.VLEN-1:0] boot_addr_i,
+
+    output logic [31:0] boot_addr_hart1_o;
+    output logic boot_hart1_o;
     // Hart id in a multicore environment (reflected in a CSR) - SUBSYSTEM
     input logic [CVA6Cfg.XLEN-1:0] hart_id_i,
     // We've got an exception from the commit stage, take it - COMMIT_STAGE
@@ -272,6 +275,9 @@ module csr_regfile
 
   logic wfi_d, wfi_q;
 
+  logic [31:0] boot_addr_hart1_q, boot_addr_hart1_d;
+  logic boot_hart1_q, boot_hart1_d;
+
   logic [63:0] cycle_q, cycle_d;
   logic [63:0] instret_q, instret_d;
 
@@ -353,6 +359,12 @@ module csr_regfile
           end else begin
             read_access_exception = 1'b1;
           end
+        end
+        riscv::CSR_BOOT_ADDR1: begin
+            csr_rdata = boot_addr_hart1_q;
+        end
+        riscv::CSR_BOOT_HART1: begin
+            csr_rdata = boot_hart1_q;
         end
         riscv::CSR_JVT: begin
           if (CVA6Cfg.RVZCMT) begin
@@ -1041,6 +1053,12 @@ module csr_regfile
           end else begin
             update_access_exception = 1'b1;
           end
+        end
+        riscv::CSR_BOOT_ADDR1: begin
+            boot_addr_hart1_d = csr_wdata;
+        end
+        riscv::CSR_BOOT_HART1: begin
+            boot_hart1_d = csr_wdata[0];
         end
         riscv::CSR_FTRAN: begin
           if (CVA6Cfg.FpPresent && !(mstatus_q.fs == riscv::Off || (CVA6Cfg.RVH && v_q && vsstatus_q.fs == riscv::Off))) begin
@@ -2541,6 +2559,8 @@ module csr_regfile
       priv_lvl_q <= riscv::PRIV_LVL_M;
       // floating-point registers
       fcsr_q     <= '0;
+      boot_addr_hart1_q <= '0;
+      boot_hart1_q <= '0;
       if (CVA6Cfg.RVZCMT) begin
         jvt_q <= '0;
       end
@@ -2625,6 +2645,8 @@ module csr_regfile
       priv_lvl_q <= priv_lvl_d;
       // floating-point registers
       fcsr_q     <= fcsr_d;
+      boot_addr_hart1_q     <= boot_addr_hart1_d;
+      boot_hart1_q <= boot_hart1_d;
       if (CVA6Cfg.RVZCMT) begin
         jvt_q <= jvt_d;
       end
@@ -2743,6 +2765,8 @@ module csr_regfile
   //pragma translate_on
 
 
+  assign boot_hart1_o = boot_hart1_q;
+  assign boot_addr_hart1_o  = boot_addr_hart1_q;
   //RVFI CSR
 
   //-------------

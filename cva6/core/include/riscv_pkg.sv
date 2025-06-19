@@ -388,6 +388,8 @@ package riscv;
     //jvt
     CSR_JVT              = 12'h017,
     CSR_FTRAN            = 12'h800,
+    CSR_BOOT_ADDR1       = 12'h801,
+    CSR_BOOT_HART1       = 12'h802,
     // Vector CSRs
     CSR_VSTART           = 12'h008,
     CSR_VXSAT            = 12'h009,
