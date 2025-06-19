@@ -36,8 +36,6 @@ module frontend
     // Flush requested by FENCE, mis-predict and exception - CONTROLLER
     input logic flush_i, // dup
     input logic [CVA6Cfg.NUM_THREADS_LOG-1:0] flush_thread_id_i,
-    input logic [31:0] boot_addr_hart1_i;
-    input logic boot_hart1_i;
     // Halt requested by WFI and Accelerate port - CONTROLLER
     input logic [CVA6Cfg.NUM_THREADS-1:0] halt_i, //dup
     // Set COMMIT PC as next PC requested by FENCE, CSR side-effect and Accelerate port - CONTROLLER
@@ -68,6 +66,10 @@ module frontend
     output logic [CVA6Cfg.NrIssuePorts-1:0] fetch_entry_valid_o,
     // Handshake's ready between fetch and decode - ID_STAGE
     input logic [CVA6Cfg.NrIssuePorts-1:0] fetch_entry_ready_i,
+
+    input logic boot_hart1_i,
+
+    input logic [CVA6Cfg.VLEN-1:0] boot_addr_hart1_i,
 
     //Thread logic
     input logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.NUM_THREADS_LOG-1:0] commit_thread_id_i
@@ -374,7 +376,7 @@ module frontend
       current_thread_d = current_thread_q;
       /*if (thread_statuses[!current_thread_q] == READY &&
           !replay)*/
-      if (fetch_entry_valid_o)
+      if (fetch_entry_valid_o && boot_hart1_i)
         current_thread_d = !current_thread_q;
 
     end
@@ -428,6 +430,9 @@ module frontend
     logic [CVA6Cfg.NUM_THREADS_LOG-1:0] popped_thread_id;
     assign icache_dreq_o.vaddr = fetch_address;
 
+    logic booted_hart1_q, booted_hart1_d;
+    assign booted_hart1_d = boot_addr_hart1_i;
+
     generate
         for (genvar i = 0; i < CVA6Cfg.NUM_THREADS; i++) begin : gen_next_pc
             next_pc #(
@@ -435,8 +440,8 @@ module frontend
             ) i_next_pc_thread (
                 .clk_i,
                 .rst_ni,
-                .npc_rst_load_i(npc_rst_load_q),
-                .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
+                .npc_rst_load_i(i ? boot_hart1_i & ~booted_hart1_q : npc_rst_load_q), // hart1 boot if boot_addr_hart_1, hart0 from standard npc_rst 
+                .boot_addr_i(boot_hart1_i & i ? boot_addr_hart1_i : boot_addr_i), // if boot_hart_1 is set, we boot from that addr.
                 // From this thread
                 .bp_valid_i(bp_valid & (current_thread_q == i)),
                 .if_ready_i(if_ready & (current_thread_q == i)),
@@ -482,6 +487,7 @@ module frontend
       icache_stall_pending_q <= '0;
       stalled_thread_id_q <= '0;
       current_thread_q <= 0;
+        booted_hart1_q <= 0;
       for (int i = 0; i < CVA6Cfg.NUM_THREADS-1; i++)
         thread_statuses[i] <= READY;
 
@@ -491,6 +497,7 @@ module frontend
       speculative_q  <= speculative_d;
       icache_valid_q <= icache_dreq_i.valid;
       thread_statuses[status_update_thread_id_comb] <= status_update_val_comb;
+        booted_hart1_q <= booted_hart1_d;
 
       current_thread_id_q <= current_thread_id_d;
       icache_stall_pending_q <= icache_stall_pending_d;

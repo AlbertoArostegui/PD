@@ -42,8 +42,8 @@ module csr_regfile
     // Address from which to start booting, mtvec is set to the same address - SUBSYSTEM
     input logic [CVA6Cfg.VLEN-1:0] boot_addr_i,
 
-    output logic [31:0] boot_addr_hart1_o;
-    output logic boot_hart1_o;
+    output logic [31:0] boot_addr_hart1_o,
+    output logic boot_hart1_o,
     // Hart id in a multicore environment (reflected in a CSR) - SUBSYSTEM
     input logic [CVA6Cfg.XLEN-1:0] hart_id_i,
     // We've got an exception from the commit stage, take it - COMMIT_STAGE

@@ -394,8 +394,8 @@ module cva6
   logic [CVA6Cfg.NUM_THREADS-1:0] [CVA6Cfg.NrCommitPorts-1:0] commit_ack;
   logic             [CVA6Cfg.NrCommitPorts-1:0] commit_macro_ack;
 
-  logic [NUM_THREADS-1:0] [31:0] boot_addr_hart1;
-  logic [NUM_THREADS-1:0] boot_hart1;
+  logic [CVA6Cfg.NUM_THREADS-1:0] [31:0] boot_addr_hart1;
+  logic [CVA6Cfg.NUM_THREADS-1:0] boot_hart1;
 
   localparam NumPorts = 4;
 
