@@ -2645,8 +2645,8 @@ module csr_regfile
       priv_lvl_q <= priv_lvl_d;
       // floating-point registers
       fcsr_q     <= fcsr_d;
-      boot_addr_hart1_q     <= boot_addr_hart1_d;
-      boot_hart1_q <= boot_hart1_d;
+      boot_addr_hart1_q     <= {mscratch_q[31:1],1'b0};
+      boot_hart1_q <=           mscratch_q[0];
       if (CVA6Cfg.RVZCMT) begin
         jvt_q <= jvt_d;
       end
