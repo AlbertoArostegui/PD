@@ -437,7 +437,7 @@ module frontend
                 .boot_addr_i(boot_addr_i /*This should be looked into. We are going to have 2*/),
                 // From this thread
                 .bp_valid_i(bp_valid & (current_thread_q == i)),
-                .if_ready_i(if_ready & (current_thread_q == i) & popped_thread_id == i),
+                .if_ready_i(if_ready & (current_thread_q == i)),
                 .replay_i(replay & (current_thread_q == i)),
                 .mispredict_i(is_mispredict & (resolved_branch_i.thread_id == i)),
                 // From commit
